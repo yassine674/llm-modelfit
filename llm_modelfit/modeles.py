@@ -1,3 +1,4 @@
+# get_specs() : essaie l'API Hugging Face, retombe sur data/models.json si ça échoue
 import json
 from pathlib import Path
 from .fetch.huggingface import get_model_config, normalize_config, get_nb_param

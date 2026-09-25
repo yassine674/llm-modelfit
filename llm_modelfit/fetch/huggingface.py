@@ -1,3 +1,4 @@
+# récupère les caractéristiques d'un modèle Hugging Face (config + nb de paramètres)
 import json
 import os
 from dotenv import load_dotenv

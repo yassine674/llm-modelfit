@@ -1,3 +1,6 @@
+# calcule la mémoire nécessaire pour faire tourner un modèle : poids + cache KV + buffers
+import math
+
 OCTETS_PAR_PRECISION = {
     "FP32": 4,
     "FP16": 2,
@@ -17,6 +20,7 @@ def memoire_cache_kv(nb_couches, nb_tetes_kv, dim_tete, contexte, precision_kv="
 
 
 def memoire_buffers(poids, cache, pct=0.1):
+    # pas de formule exacte, approximé en % de (poids + cache)
     return (poids + cache) * pct
 
 
@@ -38,7 +42,6 @@ def memoire_totale(specs, precision, contexte, precision_kv="FP16", pct_buffers=
 
 
 def nb_gpu_necessaire(total_go, mem_par_gpu_go, marge=0.15):
-    import math
     n = math.ceil(total_go / mem_par_gpu_go)
     while total_go > n * mem_par_gpu_go * (1 - marge):
         n += 1

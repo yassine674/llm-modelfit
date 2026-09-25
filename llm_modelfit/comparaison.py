@@ -1,3 +1,4 @@
+# compare un modèle à des plateformes et propose des alternatives si ça ne rentre pas
 import json
 from pathlib import Path
 from .engine import memoire_totale, octets_vers_go, nb_gpu_necessaire
@@ -44,6 +45,11 @@ def suggerer_multi_gpu(specs, contexte, plateforme):
 
 
 def diagnostiquer(specs, precision, contexte, plateforme):
+    # Un seul appel qui fait tout le raisonnement :
+    # 1. ça rentre -> rien de plus
+    # 2. ça ne rentre pas -> essaie une précision plus légère
+    # 3. toujours rien -> GPU discret : combien il en faudrait / carte embarquée : quelles autres plateformes conviendraient
+
     r = memoire_totale(specs, precision, contexte)
     detail_go = {k: octets_vers_go(v) for k, v in r.items()}
     compat = verifier_compat(detail_go["total"], plateforme)
@@ -56,16 +62,21 @@ def diagnostiquer(specs, precision, contexte, plateforme):
         "plateformes_alternatives": [],
     }
 
+    # cas 1 : ça rentre déjà, rien à suggérer
     if compat["compatible"]:
         return resultat
 
+    # cas 2 : une précision plus légère du même modèle suffit peut-être
     resultat["suggestion_precision"] = suggerer_precision(specs, contexte, plateforme, precision)
     if resultat["suggestion_precision"] is not None:
         return resultat
 
+    # cas 3 : même la précision la plus légère ne suffit pas
     if not plateforme.get("unified_memory", False):
+        # GPU discret -> on peut en mettre plusieurs
         resultat["suggestion_multi_gpu"] = suggerer_multi_gpu(specs, contexte, plateforme)
     else:
+        # carte embarquée -> pas de multi-GPU possible, on propose d'autres plateformes
         total_min_go = octets_vers_go(memoire_totale(specs, "INT4", contexte)["total"])
         resultat["plateformes_alternatives"] = [
             a["plateforme"] for a in comparer_toutes_plateformes(total_min_go)

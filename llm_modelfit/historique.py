@@ -1,3 +1,4 @@
+# garde une trace de chaque recherche faite avec l'outil
 import json
 from pathlib import Path
 from datetime import datetime
