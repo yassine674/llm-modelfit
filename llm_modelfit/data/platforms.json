@@ -1,0 +1,155 @@
+[
+  {
+    "name": "NVIDIA A100 80GB",
+    "memory_gb": 80,
+    "memory_type": "HBM2e",
+    "bandwidth_gbps": 2039,
+    "power_watts": 400,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "NVIDIA H100 80GB",
+    "memory_gb": 80,
+    "memory_type": "HBM3",
+    "bandwidth_gbps": 3350,
+    "power_watts": 700,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "NVIDIA Jetson Orin AGX 64GB",
+    "memory_gb": 64,
+    "memory_type": "LPDDR5",
+    "bandwidth_gbps": 205,
+    "power_watts": 60,
+    "has_tensor_cores": true,
+    "unified_memory": true
+  },
+  {
+    "name": "Raspberry Pi 5 8GB",
+    "memory_gb": 8,
+    "memory_type": "LPDDR4X",
+    "bandwidth_gbps": 17,
+    "power_watts": 12,
+    "has_tensor_cores": false,
+    "unified_memory": true
+  },
+  {
+    "name": "NVIDIA V100 32GB",
+    "memory_gb": 32,
+    "memory_type": "HBM2",
+    "bandwidth_gbps": 898.0,
+    "power_watts": 250,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "NVIDIA T4 16GB",
+    "memory_gb": 16,
+    "memory_type": "GDDR6",
+    "bandwidth_gbps": 320.0,
+    "power_watts": 70,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "NVIDIA L4 24GB",
+    "memory_gb": 24,
+    "memory_type": "GDDR6",
+    "bandwidth_gbps": 300.1,
+    "power_watts": 72,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "NVIDIA A10 24GB",
+    "memory_gb": 24,
+    "memory_type": "GDDR6",
+    "bandwidth_gbps": 600.2,
+    "power_watts": 150,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "NVIDIA RTX 4090 24GB",
+    "memory_gb": 24,
+    "memory_type": "GDDR6X",
+    "bandwidth_gbps": 1010.0,
+    "power_watts": 450,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "NVIDIA RTX 3090 24GB",
+    "memory_gb": 24,
+    "memory_type": "GDDR6X",
+    "bandwidth_gbps": 936.2,
+    "power_watts": 350,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "NVIDIA RTX A6000 48GB",
+    "memory_gb": 48,
+    "memory_type": "GDDR6",
+    "bandwidth_gbps": 768.0,
+    "power_watts": 300,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "NVIDIA RTX 6000 Ada 48GB",
+    "memory_gb": 48,
+    "memory_type": "GDDR6",
+    "bandwidth_gbps": 960.0,
+    "power_watts": 300,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "AMD MI250X 128GB",
+    "memory_gb": 128,
+    "memory_type": "HBM2e",
+    "bandwidth_gbps": 3280.0,
+    "power_watts": 500,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "AMD MI300X 192GB",
+    "memory_gb": 192,
+    "memory_type": "HBM3",
+    "bandwidth_gbps": 10300.0,
+    "power_watts": 750,
+    "has_tensor_cores": true,
+    "unified_memory": false
+  },
+  {
+    "name": "NVIDIA Jetson Orin Nano 8GB",
+    "memory_gb": 8,
+    "memory_type": "LPDDR5",
+    "bandwidth_gbps": 102,
+    "power_watts": 25,
+    "has_tensor_cores": true,
+    "unified_memory": true
+  },
+  {
+    "name": "NVIDIA Jetson Xavier NX 8GB",
+    "memory_gb": 8,
+    "memory_type": "LPDDR4X",
+    "bandwidth_gbps": 59,
+    "power_watts": 20,
+    "has_tensor_cores": true,
+    "unified_memory": true
+  },
+  {
+    "name": "Raspberry Pi 4 8GB",
+    "memory_gb": 8,
+    "memory_type": "LPDDR4",
+    "bandwidth_gbps": 6,
+    "power_watts": 8,
+    "has_tensor_cores": false,
+    "unified_memory": true
+  }
+]
