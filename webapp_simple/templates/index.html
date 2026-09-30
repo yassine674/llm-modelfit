@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Estimateur mémoire LLM</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 2em; max-width: 700px; }
+  label { display: block; margin-top: 0.8em; font-weight: bold; }
+  select, input[type=text] { padding: 0.3em; margin-top: 0.2em; width: 100%; box-sizing: border-box; }
+  button { margin-top: 1em; padding: 0.5em 1.2em; }
+  table { border-collapse: collapse; margin-top: 1em; width: 100%; }
+  th, td { border: 1px solid #999; padding: 0.4em 0.8em; text-align: left; }
+  .ok { color: green; font-weight: bold; }
+  .non { color: red; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>Estimateur de mémoire pour LLM</h1>
+<p><a href="{{ url_for('historique') }}">Voir l'historique des estimations</a></p>
+
+<form method="post">
+  <label for="modele">Modèle</label>
+  <select name="modele" id="modele">
+    {% for m in modeles %}
+    <option value="{{ m.hf_id }}"{% if m.hf_id == modele_id %} selected{% endif %}>{{ m.name }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="modele_custom">Ou identifiant Hugging Face personnalisé</label>
+  <input type="text" name="modele_custom" id="modele_custom" placeholder="org/nom-du-modele">
+
+  <label for="precision">Précision</label>
+  <select name="precision" id="precision">
+    {% for p in precisions %}
+    <option value="{{ p }}"{% if p == precision %} selected{% endif %}>{{ p }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="contexte">Longueur de contexte (tokens)</label>
+  <select name="contexte" id="contexte">
+    {% for c in contextes %}
+    <option value="{{ c }}"{% if c == contexte %} selected{% endif %}>{{ c }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="plateforme">Plateforme cible</label>
+  <select name="plateforme" id="plateforme">
+    {% for p in plateformes %}
+    <option value="{{ p.name }}"{% if p.name == plateforme_nom %} selected{% endif %}>{{ p.name }} ({{ p.memory_gb }} Go)</option>
+    {% endfor %}
+  </select>
+
+  <p><button type="submit">Calculer l'estimation</button></p>
+</form>
+
+{% if erreur %}
+<p style="color:red;">Erreur : {{ erreur }}</p>
+{% endif %}
+
+{% if resultat %}
+<h2>Résultat pour {{ modele_id }}</h2>
+<table>
+  <tr><th>Poids</th><td>{{ "%.2f"|format(resultat.detail_go.poids) }} Go</td></tr>
+  <tr><th>Cache KV</th><td>{{ "%.2f"|format(resultat.detail_go.cache_kv) }} Go</td></tr>
+  <tr><th>Buffers</th><td>{{ "%.2f"|format(resultat.detail_go.buffers) }} Go</td></tr>
+  <tr><th>Total</th><td>{{ "%.2f"|format(resultat.detail_go.total) }} Go</td></tr>
+</table>
+
+<p>
+  Compatible avec {{ plateforme_nom }} :
+  {% if resultat.compat.compatible %}
+    <span class="ok">OUI</span> (occupe {{ resultat.compat.taux_go }}% de la mémoire)
+  {% else %}
+    <span class="non">NON</span> (demande {{ resultat.compat.taux_go }}% de la mémoire disponible)
+  {% endif %}
+</p>
+
+{% if not resultat.compat.compatible %}
+<ul>
+  {% if resultat.suggestion_precision %}
+  <li>Suggestion : passer en {{ resultat.suggestion_precision }}</li>
+  {% endif %}
+  {% if resultat.suggestion_multi_gpu %}
+  <li>Suggestion : utiliser {{ resultat.suggestion_multi_gpu }} GPU en parallèle</li>
+  {% endif %}
+  {% if resultat.plateformes_alternatives %}
+  <li>Autres plateformes compatibles : {{ resultat.plateformes_alternatives|join(', ') }}</li>
+  {% endif %}
+</ul>
+{% endif %}
+
+<h3>Comparaison avec toutes les plateformes</h3>
+<table>
+  <tr><th>Plateforme</th><th>Statut</th><th>Mémoire utilisée</th></tr>
+  {% for c in comparaisons %}
+  <tr>
+    <td>{{ c.plateforme }}</td>
+    <td class="{{ 'ok' if c.compatible else 'non' }}">{{ 'OK' if c.compatible else 'NON' }}</td>
+    <td>{{ c.requis_go }} / {{ c.dispo_go }} Go ({{ c.taux_go }}%)</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+</body>
+</html>
