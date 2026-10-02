@@ -1,0 +1,180 @@
+<!DOCTYPE html><html class="h-full bg-[#050505]" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LLM Memory Estimator</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            app: {
+              bg: '#050505',
+              surface: '#090A0B',
+              input: '#0D0E10',
+              border: 'rgba(255, 255, 255, 0.08)',
+              borderActive: 'rgba(255, 255, 255, 0.16)',
+              textPrimary: '#F2F2F2',
+              textMuted: '#7F858D',
+              textSubtle: '#555555',
+            }
+          },
+          fontFamily: {
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="custom-inputs">
+    input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; }
+    input[type=range]::-webkit-slider-runnable-track { background: #1a1c20; height: 4px; border-radius: 2px; }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; margin-top: -6px;
+      background-color: #F2F2F2; height: 16px; width: 16px; border-radius: 9999px;
+      border: 2px solid #050505; cursor: pointer;
+    }
+    input[type=range]::-moz-range-track { background: #1a1c20; height: 4px; border-radius: 2px; }
+    input[type=range]::-moz-range-thumb {
+      background-color: #F2F2F2; height: 16px; width: 16px; border-radius: 9999px;
+      border: 2px solid #050505; cursor: pointer;
+    }
+  </style>
+</head>
+<body class="h-full bg-[#050505] text-app-textPrimary font-sans antialiased overflow-x-hidden flex flex-col justify-between selection:bg-neutral-800 selection:text-white">
+<header class="h-[60px] min-h-[60px] w-full border-b border-app-border bg-[#050505] px-6 flex items-center justify-between z-20">
+<div class="flex items-center space-x-3">
+<div aria-hidden="true" class="w-5 h-5 flex items-center justify-center border border-white/20 rounded-sm bg-neutral-900">
+<svg class="w-3.5 h-3.5 text-[#F2F2F2]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+<polygon points="12 2 2 7 12 12 22 7 12 2" stroke-linejoin="round"></polygon>
+<polyline points="2 17 12 22 22 17" stroke-linejoin="round"></polyline>
+<polyline points="2 12 12 17 22 12" stroke-linejoin="round"></polyline>
+</svg>
+</div>
+<span class="text-[13.5px] font-medium tracking-tight text-[#F2F2F2]">LLM Memory Estimator</span>
+</div>
+<nav aria-label="Navigation secondaire" class="flex items-center space-x-6 text-[13px] text-app-textMuted font-normal">
+<a class="hover:text-app-textPrimary transition-colors" href="{{ url_for('historique') }}">Historique</a>
+<span class="text-neutral-700 select-none">•</span>
+<span class="font-mono text-xs text-app-textSubtle tracking-wide">v1.0.0</span>
+</nav>
+</header>
+<main class="relative flex-1 w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16 pt-8 pb-16 flex items-center overflow-hidden">
+<div class="hidden lg:block absolute right-[-40px] top-1/2 -translate-y-1/2 w-[42%] max-w-[620px] pointer-events-none select-none z-0 opacity-70">
+<svg viewBox="0 0 400 400" class="w-full h-auto">
+<defs>
+<radialGradient id="g1" cx="35%" cy="30%" r="65%">
+<stop offset="0%" stop-color="#94a3b8" stop-opacity="0.6"></stop>
+<stop offset="40%" stop-color="#3f3f46" stop-opacity="0.5"></stop>
+<stop offset="100%" stop-color="#050505" stop-opacity="0"></stop>
+</radialGradient>
+<radialGradient id="g2" cx="30%" cy="30%" r="70%">
+<stop offset="0%" stop-color="#71717a" stop-opacity="0.6"></stop>
+<stop offset="45%" stop-color="#27272a" stop-opacity="0.5"></stop>
+<stop offset="100%" stop-color="#050505" stop-opacity="0"></stop>
+</radialGradient>
+</defs>
+<circle cx="290" cy="150" r="90" fill="url(#g1)"></circle>
+<circle cx="180" cy="260" r="70" fill="url(#g2)"></circle>
+<circle cx="310" cy="290" r="55" fill="url(#g1)"></circle>
+<line x1="290" y1="150" x2="180" y2="260" stroke="#3f3f46" stroke-width="14" stroke-linecap="round" opacity="0.4"></line>
+<line x1="180" y1="260" x2="310" y2="290" stroke="#3f3f46" stroke-width="14" stroke-linecap="round" opacity="0.4"></line>
+</svg>
+</div>
+<div class="relative z-10 w-full lg:w-[480px] lg:ml-[10%] xl:ml-[14%] flex flex-col">
+<span class="text-[10px] uppercase font-mono tracking-[3px] text-app-textMuted mb-2 block select-none">LLM Memory Analysis</span>
+<h1 class="text-[42px] sm:text-[46px] font-medium leading-[1.05] tracking-[-0.03em] text-app-textPrimary mb-3">Estimez la mémoire<br>de votre modèle LLM</h1>
+<p class="text-[13.5px] text-app-textMuted leading-relaxed max-w-[430px] mb-8 font-normal">Configurez votre modèle et votre environnement pour estimer les ressources mémoire nécessaires avant le déploiement.</p>
+<section class="w-full bg-app-surface border border-white/10 rounded-md p-6 shadow-2xl">
+<div class="flex items-center justify-between pb-4 border-b border-app-border text-[11px] font-mono mb-5">
+<span class="uppercase tracking-widest text-[#E1E1E1] font-medium">Configuration</span>
+<span class="text-app-textMuted font-sans text-xs">Paramètres d'inférence</span>
+</div>
+<form class="space-y-4" method="get" action="{{ url_for('dashboard') }}">
+<div>
+<label class="block text-[11px] font-mono uppercase tracking-wider text-app-textMuted mb-1.5" for="model-select">Modèle</label>
+<div class="relative">
+<select class="w-full h-[42px] bg-app-input border border-app-border rounded text-[13.5px] text-app-textPrimary px-3.5 pr-8 appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer" id="model-select" name="modele">
+{% for m in modeles %}
+<option value="{{ m.hf_id }}"{% if loop.first %} selected{% endif %}>{{ m.name }}</option>
+{% endfor %}
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500">
+<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+</div>
+<input class="w-full h-[38px] mt-2 bg-app-input border border-app-border rounded text-[12.5px] text-app-textPrimary px-3.5 placeholder-app-textSubtle focus:outline-none focus:border-neutral-500 transition-colors" name="modele_custom" placeholder="Ou : org/nom-du-modèle (Hugging Face)" type="text">
+</div>
+<div>
+<label class="block text-[11px] font-mono uppercase tracking-wider text-app-textMuted mb-1.5" for="precision-select">Précision</label>
+<div class="relative">
+<select class="w-full h-[42px] bg-app-input border border-app-border rounded text-[13.5px] text-app-textPrimary px-3.5 pr-8 appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer" id="precision-select" name="precision">
+{% for p in precisions %}
+<option value="{{ p }}"{% if p == 'FP16' %} selected{% endif %}>{{ p }}</option>
+{% endfor %}
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500">
+<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+</div>
+</div>
+<div class="pt-1 pb-1">
+<div class="flex justify-between items-center mb-2">
+<label class="text-[11px] font-mono uppercase tracking-wider text-app-textMuted" for="context-slider">Longueur de Contexte</label>
+<span class="px-2 py-0.5 rounded bg-app-input border border-app-border text-[11px] font-mono text-app-textPrimary" id="context-label">8K TOKENS</span>
+</div>
+<input aria-label="Sélectionner la longueur du contexte mémoire" class="w-full cursor-pointer" id="context-slider" max="4" min="0" step="1" type="range" value="2">
+<input type="hidden" name="contexte" id="context-value" value="8192">
+<div class="flex justify-between text-[10px] font-mono text-app-textSubtle mt-1 px-0.5">
+<span>2K</span><span>4K</span><span class="text-app-textPrimary font-medium">8K</span><span>16K</span><span>32K</span>
+</div>
+</div>
+<div class="pt-1">
+<label class="block text-[11px] font-mono uppercase tracking-wider text-app-textMuted mb-1.5" for="gpu-select">Plateforme Cible</label>
+<div class="relative">
+<select class="w-full h-[42px] bg-app-input border border-app-border rounded text-[13.5px] text-app-textPrimary px-3.5 pr-8 appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer" id="gpu-select" name="plateforme">
+{% for p in plateformes %}
+<option value="{{ p.name }}"{% if loop.first %} selected{% endif %}>{{ p.name }} ({{ p.memory_gb }} GB)</option>
+{% endfor %}
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500">
+<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+</div>
+</div>
+<div class="pt-3">
+<button class="w-full h-[46px] bg-[#F2F2F2] hover:bg-white text-[#050505] font-medium text-[13.5px] rounded-md transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.99] focus:outline-none" type="submit">
+<span>Calculer l'estimation</span>
+<span class="text-sm">→</span>
+</button>
+</div>
+<div class="text-center pt-2">
+<a class="text-[12px] text-neutral-500 hover:text-app-textMuted transition-colors inline-block" href="{{ url_for('historique') }}">Historique des estimations →</a>
+</div>
+</form>
+</section>
+</div>
+</main>
+<footer class="w-full border-t border-app-border bg-[#050505] px-6 py-3 flex flex-col sm:flex-row items-center justify-between text-[11px] font-mono text-app-textSubtle gap-2 z-20">
+<div class="flex items-center space-x-2">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
+<span>Calcul déterministe</span>
+<span class="mx-1">•</span>
+<span>Architecture Attention / MLP</span>
+</div>
+<div><span>LLM Memory Estimator</span><span class="mx-1">•</span><span>v1.0.0</span></div>
+</footer>
+<script>
+  const contextes = [2048, 4096, 8192, 16384, 32768];
+  const labels = ["2K", "4K", "8K", "16K", "32K"];
+  const slider = document.getElementById('context-slider');
+  const label = document.getElementById('context-label');
+  const hidden = document.getElementById('context-value');
+  slider.addEventListener('input', () => {
+    const i = parseInt(slider.value, 10);
+    hidden.value = contextes[i];
+    label.textContent = labels[i] + " TOKENS";
+  });
+</script>
+</body></html>

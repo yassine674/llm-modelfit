@@ -1,0 +1,294 @@
+<!DOCTYPE html><html class="dark h-full" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LLM Memory Estimator — Dashboard Détaillé</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { colors: { brand: { black: '#030712', card: '#0c121e', border: '#1b2537' } },
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'], mono: ['JetBrains Mono', 'ui-monospace', 'monospace'] } } }
+    }
+  </script>
+<style data-purpose="typography">
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+  </style>
+<style data-purpose="custom-styling">
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #070a11; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
+    input[type=range]::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 3px solid #3b82f6; cursor: pointer; }
+  </style>
+</head>
+<body class="bg-[#05070c] text-slate-200 min-h-screen relative overflow-x-hidden selection:bg-blue-600 selection:text-white">
+<div class="fixed top-0 right-0 w-[550px] h-[550px] pointer-events-none opacity-40 mix-blend-screen z-0 overflow-hidden">
+<svg class="w-full h-full transform translate-x-12 -translate-y-12" viewBox="0 0 400 400">
+<defs>
+<radialGradient cx="35%" cy="30%" id="sphereGrad1" r="65%">
+<stop offset="0%" stop-color="#94a3b8" stop-opacity="0.8"></stop><stop offset="30%" stop-color="#475569" stop-opacity="0.6"></stop>
+<stop offset="70%" stop-color="#1e293b" stop-opacity="0.8"></stop><stop offset="100%" stop-color="#020617" stop-opacity="1"></stop>
+</radialGradient>
+<radialGradient cx="30%" cy="30%" id="sphereGrad2" r="70%">
+<stop offset="0%" stop-color="#64748b" stop-opacity="0.9"></stop><stop offset="45%" stop-color="#334155" stop-opacity="0.6"></stop>
+<stop offset="100%" stop-color="#020617" stop-opacity="1"></stop>
+</radialGradient>
+</defs>
+<g>
+<circle cx="310" cy="120" fill="url(#sphereGrad1)" r="54"></circle>
+<circle cx="210" cy="220" fill="url(#sphereGrad2)" r="48"></circle>
+<circle cx="330" cy="270" fill="url(#sphereGrad1)" r="62"></circle>
+<line stroke="#334155" stroke-linecap="round" stroke-width="16" x1="310" x2="210" y1="120" y2="220" opacity="0.6"></line>
+<line stroke="#334155" stroke-linecap="round" stroke-width="18" x1="210" x2="330" y1="220" y2="270" opacity="0.6"></line>
+</g>
+</svg>
+</div>
+<header class="relative z-10 w-full border-b border-slate-800/80 bg-[#070b13]/80 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
+<div class="flex items-center space-x-3.5">
+<div class="w-7 h-7 flex items-center justify-center text-white">
+<svg class="w-6 h-6 stroke-current stroke-[1.75]" fill="none" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+<path d="m12 3-8 4.5 8 4.5 8-4.5L12 3Z"></path><path d="m4 12 8 4.5 8-4.5"></path><path d="m4 16.5 8 4.5 8-4.5"></path>
+</svg>
+</div>
+<div class="flex items-center space-x-2 text-sm font-semibold tracking-tight text-white">
+<span>LLM Memory Estimator</span><span class="text-slate-500 font-normal">›</span>
+<span class="text-slate-400 font-normal text-xs sm:text-sm">Estimation mémoire</span>
+</div>
+</div>
+<span class="px-2.5 py-0.5 text-[11px] font-mono font-medium rounded-full bg-slate-900 border border-slate-700/60 text-slate-400">v1.0.0</span>
+</header>
+<div class="relative z-10 max-w-[1720px] mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<aside class="lg:col-span-3 space-y-6">
+<section class="bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-xl backdrop-blur-md">
+<a class="inline-flex items-center text-xs font-medium text-slate-400 hover:text-white transition-colors mb-4" href="{{ url_for('index') }}">
+<svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+Retour
+</a>
+<div class="flex items-center text-xs uppercase font-medium tracking-wider text-slate-400 mb-6">Paramètres de l'estimation</div>
+<form class="space-y-6" method="get" action="{{ url_for('dashboard') }}">
+<div class="space-y-2">
+<label class="block text-sm font-semibold text-slate-200">Modèle</label>
+<select class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 appearance-none focus:outline-none focus:border-blue-500" name="modele">
+{% for m in modeles %}
+<option value="{{ m.hf_id }}"{% if m.hf_id == modele_id %} selected{% endif %}>{{ m.name }}</option>
+{% endfor %}
+</select>
+<input class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-xs rounded-xl px-3.5 py-2 placeholder-slate-500 focus:outline-none focus:border-blue-500" name="modele_custom" placeholder="Ou : org/nom-du-modèle" type="text">
+</div>
+<div class="space-y-2 pt-1">
+<label class="block text-sm font-semibold text-slate-200">Précision numérique</label>
+<select class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 appearance-none focus:outline-none focus:border-blue-500" name="precision">
+{% for p in precisions %}
+<option value="{{ p }}"{% if p == precision %} selected{% endif %}>{{ p }}</option>
+{% endfor %}
+</select>
+</div>
+<div class="space-y-3 pt-1">
+<div class="flex items-start justify-between">
+<label class="block text-sm font-semibold text-slate-200">Longueur de contexte</label>
+<span class="px-2 py-1 text-xs font-semibold rounded-md bg-slate-900 border border-slate-700/80 text-blue-400" id="context-label">{{ contexte }} tokens</span>
+</div>
+<input type="range" id="context-slider" min="0" max="4" step="1" class="w-full" value="{{ contextes.index(contexte) }}">
+<input type="hidden" name="contexte" id="context-value" value="{{ contexte }}">
+<div class="flex justify-between items-center text-[10px] text-slate-500 mt-2 font-mono">
+<span>2K</span><span>4K</span><span>8K</span><span>16K</span><span>32K</span>
+</div>
+</div>
+<div class="space-y-2 pt-1">
+<label class="block text-sm font-semibold text-slate-200">Plateforme cible</label>
+<select class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 appearance-none focus:outline-none focus:border-blue-500" name="plateforme">
+{% for p in plateformes %}
+<option value="{{ p.name }}"{% if p.name == plateforme.name %} selected{% endif %}>{{ p.name }}</option>
+{% endfor %}
+</select>
+<div class="flex items-center text-[11px] text-slate-400 space-x-1.5 pl-1">
+<span>Mémoire disponible : <strong class="text-slate-300 font-medium">{{ plateforme.memory_gb }} GB</strong></span>
+</div>
+</div>
+<div class="pt-2">
+<button class="w-full py-3 px-4 rounded-xl font-medium text-sm bg-white hover:bg-slate-100 text-slate-950 transition-all" type="submit">Calculer l'estimation →</button>
+</div>
+</form>
+</section>
+<section class="bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-xl backdrop-blur-md">
+<div class="flex items-center space-x-2 text-xs font-semibold text-slate-300 mb-3.5 uppercase tracking-wide">
+<span>Historique des estimations</span>
+</div>
+<ul class="space-y-2 text-xs">
+{% for h in historique_recent %}
+<li>
+<a class="group flex items-center justify-between p-2.5 rounded-xl {{ 'bg-blue-950/30 border border-blue-800/50' if loop.first else 'bg-slate-900/40 border border-slate-800/60' }} hover:border-blue-600 transition-colors" href="{{ url_for('historique') }}">
+<div class="flex items-center space-x-2.5">
+<span class="w-2 h-2 rounded-full {{ 'bg-blue-400' if loop.first else 'bg-slate-600' }}"></span>
+<div>
+<div class="font-medium text-slate-200">{{ h.modele.split('/')[-1] }} • {{ h.precision }} • {{ (h.contexte // 1024) }}K • {{ h.plateforme.split(' ')[0:2]|join(' ') }}</div>
+</div>
+</div>
+</a>
+</li>
+{% else %}
+<li class="text-slate-500">Aucune recherche pour l'instant.</li>
+{% endfor %}
+</ul>
+</section>
+</aside>
+<main class="lg:col-span-9 space-y-6">
+<section class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Résultats de l'estimation</div>
+<h1 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-0.5">{{ modele_id.split('/')[-1] }}</h1>
+<div class="text-xs sm:text-sm text-slate-400 mt-1 flex flex-wrap items-center gap-y-1">
+<span>Précision : <strong class="text-slate-200">{{ precision }}</strong></span>
+<span class="mx-2.5 text-slate-600">•</span>
+<span>Contexte : <strong class="text-slate-200">{{ contexte }} tokens</strong></span>
+<span class="mx-2.5 text-slate-600">•</span>
+<span>Plateforme : <strong class="text-slate-200">{{ plateforme.name }}</strong></span>
+</div>
+</div>
+</section>
+<section class="bg-[#0b101b]/95 border border-slate-800/90 rounded-2xl p-6 shadow-xl relative overflow-hidden backdrop-blur-md">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+<div class="md:col-span-8 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+<div class="relative w-28 h-28 shrink-0 flex items-center justify-center">
+<svg class="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="#161f30" stroke-width="8"></circle>
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="{{ '#0284c7' if diagnostic.compat.compatible else '#dc2626' }}" stroke-dasharray="251.2" stroke-dashoffset="{{ 251.2 - (251.2 * (diagnostic.compat.taux_go if diagnostic.compat.taux_go < 100 else 100) / 100) }}" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+<span class="text-xl font-bold text-white tracking-tight">{{ diagnostic.compat.taux_go }}%</span>
+<span class="text-[9px] uppercase tracking-wider text-slate-400">utilisation</span>
+</div>
+</div>
+<div class="flex-1 w-full space-y-3">
+<div>
+<div class="flex items-baseline space-x-2">
+<span class="text-3xl sm:text-4xl font-bold text-white tracking-tight">{{ "%.1f"|format(diagnostic.detail_go.total) }} GB</span>
+<span class="text-lg text-slate-400 font-normal">/ {{ plateforme.memory_gb }} GB</span>
+</div>
+<div class="text-xs text-slate-400 mt-0.5">Occupation mémoire</div>
+</div>
+<div>
+<div class="w-full h-3 bg-slate-900 border border-slate-800 rounded-full overflow-hidden flex">
+<div class="h-full bg-gradient-to-r {{ 'from-blue-600 to-sky-400' if diagnostic.compat.compatible else 'from-red-600 to-red-400' }} rounded-full" style="width: {{ diagnostic.compat.taux_go if diagnostic.compat.taux_go < 100 else 100 }}%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="md:col-span-4 flex md:justify-end items-center">
+{% if diagnostic.compat.compatible %}
+<div class="w-full sm:w-auto flex items-center space-x-3.5 bg-emerald-950/20 border border-emerald-800/40 rounded-2xl p-4">
+<div class="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0">
+<svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+</div>
+<div><div class="text-sm font-semibold text-emerald-400">Compatible</div><div class="text-xs text-slate-400">avec la plateforme sélectionnée</div></div>
+</div>
+{% else %}
+<div class="w-full sm:w-auto flex items-center space-x-3.5 bg-red-950/20 border border-red-800/40 rounded-2xl p-4">
+<div class="w-7 h-7 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0">
+<svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" x2="9" y1="9" y2="15"></line><line x1="9" x2="15" y1="9" y2="15"></line></svg>
+</div>
+<div><div class="text-sm font-semibold text-red-400">Non compatible</div><div class="text-xs text-slate-400">avec la plateforme sélectionnée</div></div>
+</div>
+{% endif %}
+</div>
+</div>
+{% if not diagnostic.compat.compatible %}
+<div class="mt-5 pt-5 border-t border-slate-800/80 text-sm text-slate-300 space-y-1.5">
+{% if diagnostic.suggestion_precision %}
+<div>💡 Essayez la précision <strong class="text-blue-400">{{ diagnostic.suggestion_precision }}</strong> : elle devrait rentrer sur cette plateforme.</div>
+{% elif diagnostic.suggestion_multi_gpu %}
+<div>💡 Il faudrait environ <strong class="text-blue-400">{{ diagnostic.suggestion_multi_gpu }} GPU</strong> de ce type en parallèle.</div>
+{% elif diagnostic.plateformes_alternatives %}
+<div>💡 Plateformes compatibles : <strong class="text-blue-400">{{ diagnostic.plateformes_alternatives|join(', ') }}</strong></div>
+{% endif %}
+</div>
+{% endif %}
+</section>
+<section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+<div class="bg-[#0b101b]/90 border border-slate-800/80 rounded-2xl p-4 flex items-center space-x-3.5">
+<div><div class="text-xs text-slate-400">Mémoire des poids</div><div class="text-xl font-bold text-white mt-0.5">{{ "%.1f"|format(diagnostic.detail_go.poids) }} GB</div></div>
+</div>
+<div class="bg-[#0b101b]/90 border border-slate-800/80 rounded-2xl p-4 flex items-center space-x-3.5">
+<div><div class="text-xs text-slate-400">Cache KV</div><div class="text-xl font-bold text-white mt-0.5">{{ "%.2f"|format(diagnostic.detail_go.cache_kv) }} GB</div></div>
+</div>
+<div class="bg-[#0b101b]/90 border border-slate-800/80 rounded-2xl p-4 flex items-center space-x-3.5">
+<div><div class="text-xs text-slate-400">Buffers</div><div class="text-xl font-bold text-white mt-0.5">{{ "%.2f"|format(diagnostic.detail_go.buffers) }} GB</div></div>
+</div>
+<div class="bg-gradient-to-br from-[#0c1629] to-[#08101e] border-2 border-blue-500/80 rounded-2xl p-4 flex items-center space-x-3.5 shadow-lg">
+<div><div class="text-xs text-blue-300 font-medium">Mémoire totale</div><div class="text-xl font-extrabold text-white mt-0.5">{{ "%.1f"|format(diagnostic.detail_go.total) }} GB</div></div>
+</div>
+</section>
+<section class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<article class="bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg">
+<div class="mb-5 text-sm font-semibold text-slate-200">Détail de la mémoire</div>
+<div class="w-full h-3.5 bg-slate-900 rounded-full overflow-hidden flex p-0.5 gap-0.5 border border-slate-800">
+<div class="h-full bg-blue-500 rounded-l-full" style="width: {{ (diagnostic.detail_go.poids / diagnostic.detail_go.total * 100)|round(1) }}%;"></div>
+<div class="h-full bg-cyan-400" style="width: {{ (diagnostic.detail_go.cache_kv / diagnostic.detail_go.total * 100)|round(1) }}%;"></div>
+<div class="h-full bg-slate-300 rounded-r-full" style="width: {{ (diagnostic.detail_go.buffers / diagnostic.detail_go.total * 100)|round(1) }}%;"></div>
+</div>
+<div class="grid grid-cols-3 gap-3 mt-6 pt-2">
+<div class="space-y-1"><div class="flex items-center space-x-2"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span><span class="text-xs text-slate-400">Poids</span></div><div class="text-base font-bold text-white pl-4.5">{{ "%.1f"|format(diagnostic.detail_go.poids) }} GB</div></div>
+<div class="space-y-1"><div class="flex items-center space-x-2"><span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span><span class="text-xs text-slate-400">Cache KV</span></div><div class="text-base font-bold text-white pl-4.5">{{ "%.2f"|format(diagnostic.detail_go.cache_kv) }} GB</div></div>
+<div class="space-y-1"><div class="flex items-center space-x-2"><span class="w-2.5 h-2.5 rounded-full bg-slate-300"></span><span class="text-xs text-slate-400">Buffers</span></div><div class="text-base font-bold text-white pl-4.5">{{ "%.2f"|format(diagnostic.detail_go.buffers) }} GB</div></div>
+</div>
+</article>
+<article class="bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg">
+<div class="mb-2 text-sm font-semibold text-slate-200">Évolution de la mémoire selon la longueur de contexte</div>
+<div class="relative w-full h-44 mt-2">
+{% set maxgo = courbe[-1].total_go * 1.15 %}
+<svg class="w-full h-full" preserveAspectRatio="none" viewBox="0 0 450 170">
+<line stroke="#192338" stroke-width="1" x1="45" x2="440" y1="15" y2="15"></line>
+<line stroke="#192338" stroke-width="1" x1="45" x2="440" y1="75" y2="75"></line>
+<line stroke="#192338" stroke-width="1" x1="45" x2="440" y1="135" y2="135"></line>
+<polyline fill="none" points="{% for pt in courbe %}{{ 50 + loop.index0 * 96 }},{{ 135 - (pt.total_go / maxgo * 120) }}{% if not loop.last %} {% endif %}{% endfor %}" stroke="#38bdf8" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"></polyline>
+{% for pt in courbe %}
+<circle cx="{{ 50 + loop.index0 * 96 }}" cy="{{ 135 - (pt.total_go / maxgo * 120) }}" r="{{ '5' if pt.contexte == contexte else '3.5' }}" fill="{{ '#ffffff' if pt.contexte == contexte else '#38bdf8' }}" stroke="{{ '#0284c7' if pt.contexte == contexte else 'none' }}" stroke-width="2.5"></circle>
+{% endfor %}
+</svg>
+<div class="flex justify-between items-center text-[10px] text-slate-500 font-mono pl-10 pr-2 mt-1">
+<span>2K</span><span>4K</span><span>8K</span><span>16K</span><span>32K</span>
+</div>
+</div>
+</article>
+<article class="bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg overflow-x-auto lg:col-span-2">
+<div class="mb-4 text-sm font-semibold text-slate-200">Compatibilité des plateformes</div>
+<table class="w-full text-left text-xs">
+<thead><tr class="text-[10px] uppercase font-semibold text-slate-400 border-b border-slate-800/80"><th class="pb-2.5">Plateforme</th><th class="pb-2.5">Statut</th><th class="pb-2.5 text-right">Mémoire utilisée</th></tr></thead>
+<tbody class="divide-y divide-slate-800/50">
+{% for c in comparaisons %}
+<tr class="hover:bg-slate-900/30">
+<td class="py-2.5 text-slate-200 font-medium">{{ c.plateforme }}</td>
+<td class="py-2.5">
+{% if c.compatible %}
+<span class="inline-flex items-center text-[11px] font-medium text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>OK</span>
+{% else %}
+<span class="inline-flex items-center text-[11px] font-medium text-red-400"><span class="w-1.5 h-1.5 rounded-full bg-red-400 mr-1.5"></span>Non</span>
+{% endif %}
+</td>
+<td class="py-2.5 text-right font-mono text-slate-300">{{ c.requis_go }} / {{ c.dispo_go }} GB <span class="{{ 'text-red-400 font-medium' if not c.compatible else 'text-slate-500' }}">({{ c.taux_go }}%)</span></td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</article>
+</section>
+</main>
+</div>
+<footer class="mt-8 border-t border-slate-900 px-6 py-4 text-xs text-slate-600 flex flex-col sm:flex-row items-center justify-between gap-2 max-w-[1720px] mx-auto">
+<div class="flex items-center space-x-2"><span>Calcul déterministe</span><span class="text-slate-700">•</span><span>Architecture Attention / MLP</span></div>
+<div class="text-[11px] font-mono text-slate-600">LLM Memory Estimator • v1.0.0</div>
+</footer>
+<script>
+  const contextes = [2048, 4096, 8192, 16384, 32768];
+  const labels = ["2K", "4K", "8K", "16K", "32K"];
+  const slider = document.getElementById('context-slider');
+  const label = document.getElementById('context-label');
+  const hidden = document.getElementById('context-value');
+  slider.addEventListener('input', () => {
+    const i = parseInt(slider.value, 10);
+    hidden.value = contextes[i];
+    label.textContent = contextes[i] + " tokens";
+  });
+</script>
+</body></html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html><html class="dark h-full" lang="fr"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LLM Memory Estimator — Historique des estimations</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: { extend: { colors: { obsidian: { 950: '#04060a', 900: '#07090e', 850: '#0b0f17', 800: '#0f1722', 700: '#151e2d' } },
+        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } }
+    }
+  </script>
+<style data-purpose="custom-layout-and-glow">
+    .metaball-sphere-1 { position: absolute; top: -30px; right: -20px; width: 440px; height: 440px;
+      background: radial-gradient(circle at 35% 35%, #475569 0%, #1e293b 40%, #090d16 75%, transparent 100%);
+      border-radius: 50%; filter: blur(1px); opacity: 0.35; pointer-events: none; }
+    .metaball-sphere-2 { position: absolute; top: 130px; right: 170px; width: 250px; height: 250px;
+      background: radial-gradient(circle at 30% 30%, #64748b 0%, #1e293b 45%, #05070c 80%, transparent 100%);
+      border-radius: 50%; filter: blur(1px); opacity: 0.28; pointer-events: none; }
+    .card-active-glow { box-shadow: 0 0 0 1px #0284c7, 0 8px 24px -4px rgba(2, 132, 199, 0.15); }
+  </style>
+</head>
+<body class="bg-obsidian-950 text-slate-200 min-h-screen flex flex-col font-sans selection:bg-sky-500 selection:text-white relative overflow-x-hidden">
+<div class="metaball-sphere-1"></div>
+<div class="metaball-sphere-2"></div>
+<header class="w-full border-b border-slate-800/60 bg-obsidian-950/80 backdrop-blur-md sticky top-0 z-50">
+<div class="max-w-[1536px] mx-auto px-6 lg:px-12 h-16 flex items-center justify-between">
+<div class="flex items-center space-x-3">
+<a class="flex items-center space-x-3 group" href="{{ url_for('index') }}">
+<div class="w-7 h-7 text-sky-400 group-hover:text-sky-300 transition-colors">
+<svg class="w-full h-full" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+<path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path>
+</svg>
+</div>
+<span class="font-semibold text-white tracking-tight text-sm md:text-base">LLM Memory Estimator</span>
+</a>
+<span class="text-slate-500 text-sm font-normal">›</span>
+<span class="text-slate-400 text-sm">Historique des estimations</span>
+</div>
+<span class="px-2.5 py-0.5 rounded-md text-xs font-mono text-slate-400 border border-slate-800 bg-obsidian-900">v1.0.0</span>
+</div>
+</header>
+<main class="flex-1 max-w-[1536px] w-full mx-auto px-6 lg:px-12 pt-8 pb-16 flex flex-col justify-start relative z-10">
+<div class="mb-5">
+<a class="inline-flex items-center text-xs font-medium text-slate-400 hover:text-white transition-colors group" href="{{ url_for('index') }}">
+<svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="19" x2="5" y1="12" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+Retour
+</a>
+</div>
+<section class="mb-8">
+<h1 class="text-3xl lg:text-4xl font-extrabold text-white tracking-tight mb-2.5">Historique des estimations</h1>
+<p class="text-slate-400 text-sm max-w-2xl leading-relaxed">Retrouvez ici toutes vos estimations de <span class="text-slate-200">mémoire</span> et accédez rapidement aux détails ou relancez une configuration.</p>
+</section>
+<div class="bg-obsidian-900/90 border border-slate-800/80 rounded-2xl p-5 lg:p-6 shadow-2xl backdrop-blur-xl">
+<div class="space-y-3">
+{% for e in entrees %}
+<a href="{{ url_for('dashboard', modele=e.modele, precision=e.precision, contexte=e.contexte, plateforme=e.plateforme) }}" class="relative flex flex-wrap items-center justify-between gap-4 p-4 sm:p-4.5 rounded-xl border {{ 'border-sky-600/70 bg-gradient-to-r from-obsidian-850 to-obsidian-900 card-active-glow' if loop.first else 'border-slate-800/80 bg-obsidian-950/40' }} hover:border-slate-600 transition-all cursor-pointer">
+<div class="flex items-center space-x-4 min-w-[220px]">
+<div class="w-10 h-10 rounded-lg bg-obsidian-950 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" x2="12" y1="22.08" y2="12"></line></svg>
+</div>
+<div>
+<h2 class="text-sm font-semibold text-white tracking-wide">{{ e.modele.split('/')[-1] }}</h2>
+<div class="text-[11px] text-slate-400 flex items-center space-x-1.5 mt-0.5">
+<span class="text-slate-300 font-medium">{{ e.precision }}</span><span>•</span><span>{{ e.contexte }} tokens</span>
+</div>
+</div>
+</div>
+<div class="hidden md:flex items-center space-x-3 min-w-[180px]">
+<div class="w-8 h-8 rounded-lg bg-obsidian-950 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect height="16" rx="2" ry="2" width="16" x="4" y="4"></rect><rect height="6" width="6" x="9" y="9"></rect></svg>
+</div>
+<div><p class="text-xs font-semibold text-slate-200">{{ e.plateforme }}</p><p class="text-[11px] text-slate-500">Plateforme cible</p></div>
+</div>
+<div class="hidden sm:flex items-center space-x-3 min-w-[140px]">
+<div class="relative w-10 h-10 shrink-0">
+<svg class="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
+<circle cx="18" cy="18" fill="none" r="14" stroke="#1e293b" stroke-width="3"></circle>
+<circle cx="18" cy="18" fill="none" r="14" stroke="{{ '#0ea5e9' if e.compatible else '#f87171' }}" stroke-dasharray="{{ (e.taux_go if e.taux_go < 100 else 100) * 0.88 }}, 100" stroke-linecap="round" stroke-width="3"></circle>
+</svg>
+<span class="absolute inset-0 flex items-center justify-center text-[9px] font-semibold text-slate-200">{{ e.taux_go }}%</span>
+</div>
+<div><p class="text-xs font-semibold text-slate-200">{{ e.taux_go }}%</p><p class="text-[11px] text-slate-400">{{ "%.1f"|format(e.detail_go.total) }} / {{ e.dispo_go }} GB</p></div>
+</div>
+<div class="min-w-[140px] text-left">
+{% if e.compatible %}
+<div class="inline-flex items-center space-x-1.5 text-xs font-semibold text-emerald-400">
+<svg class="w-3.5 h-3.5 fill-emerald-400/20 stroke-emerald-400" fill="none" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<span>Compatible</span>
+</div>
+{% else %}
+<div class="inline-flex items-center space-x-1.5 text-xs font-semibold text-red-400">
+<svg class="w-3.5 h-3.5 fill-red-400/20 stroke-red-400" fill="none" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" x2="9" y1="9" y2="15"></line><line x1="9" x2="15" y1="9" y2="15"></line></svg>
+<span>Non compatible</span>
+</div>
+{% endif %}
+<p class="text-[11px] text-slate-500 mt-0.5">{{ e.date.replace('T', ' ') }}</p>
+</div>
+</a>
+{% else %}
+<p class="text-slate-500 text-sm text-center py-8">Aucune estimation enregistrée pour l'instant.</p>
+{% endfor %}
+</div>
+<div class="flex items-center justify-between pt-5 mt-4 border-t border-slate-800/80 text-xs text-slate-400">
+<span>{{ entrees|length }} estimation{{ 's' if entrees|length != 1 else '' }} au total</span>
+</div>
+</div>
+</main>
+<footer class="w-full border-t border-slate-800/60 py-4 text-[11px] text-slate-500">
+<div class="max-w-[1536px] mx-auto px-6 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-2">
+<div class="flex items-center space-x-2"><span>Calcul déterministe</span><span>•</span><span>Architecture Attention / MLP</span></div>
+<div class="flex items-center space-x-2 font-mono"><span>LLM Memory Estimator</span><span>•</span><span>v1.0.0</span></div>
+</div>
+</footer>
+</body></html>
