@@ -18,4 +18,4 @@ build-backend = "setuptools.build_meta"
 include = ["llm_modelfit*"]
 
 [tool.setuptools.package-data]
-"llm_modelfit" = ["data/*.json"]
+"llm_modelfit" = ["data/*.db"]

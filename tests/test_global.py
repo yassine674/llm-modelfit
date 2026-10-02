@@ -5,7 +5,7 @@ from llm_modelfit.engine import (
 )
 from llm_modelfit.comparaison import (
     charger_plateformes, verifier_compat, comparer_toutes_plateformes,
-    suggerer_precision, suggerer_multi_gpu, diagnostiquer,
+    meilleure_option, toutes_les_options, diagnostiquer,
 )
 from llm_modelfit.historique import ajouter_historique, charger_historique
 
@@ -52,28 +52,33 @@ rpi5 = next(p for p in plateformes if p["name"] == "Raspberry Pi 5 8GB")
 r_fp16 = octets_vers_go(memoire_totale(specs_api, "FP16", 8192)["total"])
 verifier("Mistral FP16 8K ne rentre PAS sur Raspberry Pi 5", verifier_compat(r_fp16, rpi5)["compatible"] is False)
 
-suggestion = suggerer_precision(specs_api, 8192, rpi5, "FP16")
-verifier("suggerer_precision propose INT4 pour Mistral sur Raspberry Pi 5", suggestion == "INT4")
+option_rpi5 = meilleure_option(specs_api, 8192, rpi5)
+verifier("meilleure_option propose INT4 pour Mistral sur Raspberry Pi 5", option_rpi5["precision"] == "INT4" and option_rpi5["nb_gpu"] == 1)
 
-plateforme_perso = {"name": "Carte perso", "memory_gb": 6}
-nb_gpu = suggerer_multi_gpu(specs_local, 2048, plateforme_perso)
-verifier("suggerer_multi_gpu fonctionne sans la clé unified_memory", nb_gpu is not None)
+plateforme_perso = {"name": "Carte perso", "memory_gb": 6, "power_watts": 50}
+option_perso = meilleure_option(specs_local, 2048, plateforme_perso)
+verifier("meilleure_option fonctionne sans la clé unified_memory", option_perso["nb_gpu"] is not None)
 
 # --- diagnostic unifié ---
 diag_ok = diagnostiquer(specs_api, "INT4", 8192, plateformes[0])
-verifier("diagnostiquer : cas compatible, pas de suggestion", diag_ok["compat"]["compatible"] and diag_ok["suggestion_precision"] is None)
+verifier("diagnostiquer : cas compatible, pas d'options proposées", diag_ok["compat"]["compatible"] and diag_ok["meilleures_options"] == [])
+verifier("diagnostiquer : renvoie puissance et note thermique", diag_ok["power_watts"] > 0 and diag_ok["note_thermique"] is not None)
+
+diag_batterie = diagnostiquer(specs_api, "INT4", 8192, rpi5, capacite_batterie_wh=100)
+verifier("diagnostiquer : calcule l'autonomie si capacité batterie fournie", diag_batterie["autonomie_heures"] is not None)
 
 diag_precision = diagnostiquer(specs_api, "FP16", 8192, rpi5)
-verifier("diagnostiquer : suggère INT4 quand FP16 ne rentre pas", diag_precision["suggestion_precision"] == "INT4")
+options = diag_precision["meilleures_options"]
+verifier("diagnostiquer : propose des options quand FP16 ne rentre pas", len(options) > 0)
+verifier("diagnostiquer : la meilleure option sur Raspberry Pi 5 est INT4 à 1 GPU", any(o["plateforme"] == "Raspberry Pi 5 8GB" and o["precision"] == "INT4" and o["nb_gpu"] == 1 for o in options))
 
 specs_geant = {"nb_param": 500_000_000_000, "num_layers": 96, "num_kv_heads": 96, "head_dim": 128}
 diag_multi = diagnostiquer(specs_geant, "INT4", 2048, plateformes[0])
-verifier("diagnostiquer : suggère du multi-GPU quand rien ne rentre sur GPU discret", diag_multi["suggestion_multi_gpu"] is not None)
+verifier("diagnostiquer : propose du multi-GPU quand rien ne rentre sur 1 seul GPU discret", any(o["nb_gpu"] and o["nb_gpu"] > 1 for o in diag_multi["meilleures_options"]))
 
-rpi4 = next(p for p in plateformes if p["name"] == "Raspberry Pi 4 8GB")
-specs_gemma = get_specs("google/gemma-7b")
-diag_alt = diagnostiquer(specs_gemma, "INT4", 8192, rpi4)
-verifier("diagnostiquer : propose d'autres plateformes sur carte embarquée", len(diag_alt["plateformes_alternatives"]) > 0)
+toutes = toutes_les_options(specs_api, 8192)
+verifier("toutes_les_options couvre toutes les plateformes compatibles", len(toutes) > 0)
+verifier("toutes_les_options est triée (moins de GPU en premier)", toutes[0]["nb_gpu"] <= toutes[-1]["nb_gpu"])
 
 # --- historique ---
 avant = len(charger_historique())

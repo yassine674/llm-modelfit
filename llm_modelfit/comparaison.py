@@ -1,15 +1,19 @@
 # compare un modèle à des plateformes et propose des alternatives si ça ne rentre pas
-import json
-from pathlib import Path
-from .engine import memoire_totale, octets_vers_go, nb_gpu_necessaire
+from .db import connexion
+from .engine import memoire_totale, octets_vers_go, nb_gpu_necessaire, autonomie_heures, note_thermique
 
-CHEMIN_PLATEFORMES = Path(__file__).parent / "data" / "platforms.json"
 ORDRE_PRECISIONS = ["FP32", "FP16", "INT8", "INT4"]
 
 
 def charger_plateformes():
-    with open(CHEMIN_PLATEFORMES) as f:
-        return json.load(f)
+    conn = connexion()
+    lignes = conn.execute("SELECT * FROM platforms").fetchall()
+    conn.close()
+    plateformes = [dict(l) for l in lignes]
+    for p in plateformes:
+        p["has_tensor_cores"] = bool(p["has_tensor_cores"])
+        p["unified_memory"] = bool(p["unified_memory"])
+    return plateformes
 
 
 def verifier_compat(total_go, plateforme):
@@ -28,59 +32,72 @@ def comparer_toutes_plateformes(total_go):
     return sorted(resultats, key=lambda r: not r["compatible"])
 
 
-def suggerer_precision(specs, contexte, plateforme, precision_actuelle):
-    depart = ORDRE_PRECISIONS.index(precision_actuelle)
-    for precision in ORDRE_PRECISIONS[depart + 1:]:
+def meilleure_option(specs, contexte, plateforme):
+    """
+    Pour une plateforme donnée : la meilleure précision qui tient sur une seule
+    unité. Si aucune ne tient, et que c'est un GPU discret (pas de mémoire
+    unifiée), le nombre de GPU nécessaires à la précision la plus légère.
+    Renvoie precision=None si rien ne convient jamais (cartes embarquées).
+    """
+    for precision in ORDRE_PRECISIONS:
         total_go = octets_vers_go(memoire_totale(specs, precision, contexte)["total"])
         if verifier_compat(total_go, plateforme)["compatible"]:
-            return precision
-    return None
+            return {
+                "plateforme": plateforme["name"],
+                "precision": precision,
+                "nb_gpu": 1,
+                "total_go": total_go,
+                "power_watts": plateforme["power_watts"],
+                "note_thermique": note_thermique(plateforme["power_watts"]),
+            }
 
-
-def suggerer_multi_gpu(specs, contexte, plateforme):
     if plateforme.get("unified_memory", False):
-        return None
-    total_go = octets_vers_go(memoire_totale(specs, "INT4", contexte)["total"])
-    return nb_gpu_necessaire(total_go, plateforme["memory_gb"])
+        return {
+            "plateforme": plateforme["name"],
+            "precision": None,
+            "nb_gpu": None,
+            "total_go": None,
+            "power_watts": plateforme["power_watts"],
+            "note_thermique": note_thermique(plateforme["power_watts"]),
+        }
+
+    total_go_int4 = octets_vers_go(memoire_totale(specs, "INT4", contexte)["total"])
+    n = nb_gpu_necessaire(total_go_int4, plateforme["memory_gb"])
+    return {
+        "plateforme": plateforme["name"],
+        "precision": "INT4",
+        "nb_gpu": n,
+        "total_go": total_go_int4,
+        "power_watts": plateforme["power_watts"] * n,
+        "note_thermique": note_thermique(plateforme["power_watts"]),
+    }
 
 
-def diagnostiquer(specs, precision, contexte, plateforme):
-    # Un seul appel qui fait tout le raisonnement :
-    # 1. ça rentre -> rien de plus
-    # 2. ça ne rentre pas -> essaie une précision plus légère
-    # 3. toujours rien -> GPU discret : combien il en faudrait / carte embarquée : quelles autres plateformes conviendraient
+def toutes_les_options(specs, contexte):
+    """Meilleure option pour chaque plateforme, triée (le moins de GPU, la
+    meilleure précision, la puissance la plus faible en premier)."""
+    options = [meilleure_option(specs, contexte, p) for p in charger_plateformes()]
+    options = [o for o in options if o["precision"] is not None]
+    options.sort(key=lambda o: (o["nb_gpu"], ORDRE_PRECISIONS.index(o["precision"]), o["power_watts"]))
+    return options
 
+
+def diagnostiquer(specs, precision, contexte, plateforme, capacite_batterie_wh=None):
     r = memoire_totale(specs, precision, contexte)
     detail_go = {k: octets_vers_go(v) for k, v in r.items()}
     compat = verifier_compat(detail_go["total"], plateforme)
+    puissance = plateforme["power_watts"]
 
     resultat = {
         "detail_go": detail_go,
         "compat": compat,
-        "suggestion_precision": None,
-        "suggestion_multi_gpu": None,
-        "plateformes_alternatives": [],
+        "power_watts": puissance,
+        "note_thermique": note_thermique(puissance),
+        "autonomie_heures": autonomie_heures(capacite_batterie_wh, puissance) if capacite_batterie_wh else None,
+        "meilleures_options": [],
     }
 
-    # cas 1 : ça rentre déjà, rien à suggérer
-    if compat["compatible"]:
-        return resultat
-
-    # cas 2 : une précision plus légère du même modèle suffit peut-être
-    resultat["suggestion_precision"] = suggerer_precision(specs, contexte, plateforme, precision)
-    if resultat["suggestion_precision"] is not None:
-        return resultat
-
-    # cas 3 : même la précision la plus légère ne suffit pas
-    if not plateforme.get("unified_memory", False):
-        # GPU discret -> on peut en mettre plusieurs
-        resultat["suggestion_multi_gpu"] = suggerer_multi_gpu(specs, contexte, plateforme)
-    else:
-        # carte embarquée -> pas de multi-GPU possible, on propose d'autres plateformes
-        total_min_go = octets_vers_go(memoire_totale(specs, "INT4", contexte)["total"])
-        resultat["plateformes_alternatives"] = [
-            a["plateforme"] for a in comparer_toutes_plateformes(total_min_go)
-            if a["compatible"] and a["plateforme"] != plateforme["name"]
-        ]
+    if not compat["compatible"]:
+        resultat["meilleures_options"] = toutes_les_options(specs, contexte)
 
     return resultat

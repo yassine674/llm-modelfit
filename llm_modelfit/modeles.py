@@ -1,20 +1,27 @@
-# get_specs() : essaie l'API Hugging Face, retombe sur data/models.json si ça échoue
-import json
-from pathlib import Path
+# get_specs() : essaie l'API Hugging Face, retombe sur la base locale si ça échoue
+from .db import connexion
 from .fetch.huggingface import get_model_config, normalize_config, get_nb_param
-
-CHEMIN_MODELS = Path(__file__).parent / "data" / "models.json"
 
 
 def _depuis_local(model_id):
-    with open(CHEMIN_MODELS) as f:
-        modeles = json.load(f)
-    for m in modeles:
-        if model_id in (m.get("hf_id"), m.get("name")):
-            specs = normalize_config(m)
-            specs["nb_param"] = m["params"]
-            return specs
-    return None
+    conn = connexion()
+    ligne = conn.execute(
+        "SELECT * FROM models WHERE hf_id = ? OR name = ?", (model_id, model_id)
+    ).fetchone()
+    conn.close()
+    if ligne is None:
+        return None
+    m = dict(ligne)
+    specs = normalize_config(m)
+    specs["nb_param"] = m["params"]
+    return specs
+
+
+def lister_modeles():
+    conn = connexion()
+    lignes = conn.execute("SELECT name, hf_id FROM models").fetchall()
+    conn.close()
+    return [dict(l) for l in lignes]
 
 
 def get_specs(model_id):

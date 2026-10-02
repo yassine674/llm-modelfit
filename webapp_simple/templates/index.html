@@ -50,6 +50,9 @@
     {% endfor %}
   </select>
 
+  <label for="batterie_wh">Capacité batterie en Wh (optionnel, pour l'embarqué)</label>
+  <input type="text" name="batterie_wh" id="batterie_wh" placeholder="ex: 100">
+
   <p><button type="submit">Calculer l'estimation</button></p>
 </form>
 
@@ -75,18 +78,25 @@
   {% endif %}
 </p>
 
+<p>Puissance de la plateforme : {{ resultat.power_watts }} W ({{ resultat.note_thermique }})</p>
+{% if resultat.autonomie_heures %}
+<p>Autonomie estimée sur cette batterie : {{ "%.1f"|format(resultat.autonomie_heures) }} h</p>
+{% endif %}
+
 {% if not resultat.compat.compatible %}
-<ul>
-  {% if resultat.suggestion_precision %}
-  <li>Suggestion : passer en {{ resultat.suggestion_precision }}</li>
-  {% endif %}
-  {% if resultat.suggestion_multi_gpu %}
-  <li>Suggestion : utiliser {{ resultat.suggestion_multi_gpu }} GPU en parallèle</li>
-  {% endif %}
-  {% if resultat.plateformes_alternatives %}
-  <li>Autres plateformes compatibles : {{ resultat.plateformes_alternatives|join(', ') }}</li>
-  {% endif %}
-</ul>
+<h3>Meilleures combinaisons trouvées</h3>
+<table>
+  <tr><th>Plateforme</th><th>Précision</th><th>GPU</th><th>Puissance</th><th>Ventilation</th></tr>
+  {% for o in resultat.meilleures_options[:5] %}
+  <tr>
+    <td>{{ o.plateforme }}</td>
+    <td>{{ o.precision }}</td>
+    <td>{{ o.nb_gpu }}</td>
+    <td>{{ o.power_watts }} W</td>
+    <td>{{ o.note_thermique }}</td>
+  </tr>
+  {% endfor %}
+</table>
 {% endif %}
 
 <h3>Comparaison avec toutes les plateformes</h3>

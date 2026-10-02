@@ -135,13 +135,26 @@
 <div class="relative">
 <select class="w-full h-[42px] bg-app-input border border-app-border rounded text-[13.5px] text-app-textPrimary px-3.5 pr-8 appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer" id="gpu-select" name="plateforme">
 {% for p in plateformes %}
-<option value="{{ p.name }}"{% if loop.first %} selected{% endif %}>{{ p.name }} ({{ p.memory_gb }} GB)</option>
+<option value="{{ p.name }}" data-embarque="{{ 'oui' if p.unified_memory else 'non' }}"{% if loop.first %} selected{% endif %}>{{ p.name }} ({{ p.memory_gb }} GB)</option>
 {% endfor %}
 </select>
 <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500">
 <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
 </div>
 </div>
+<div class="mt-2 grid grid-cols-2 gap-2">
+<input class="col-span-2 h-[36px] bg-app-input border border-app-border rounded text-[12px] text-app-textPrimary px-3 placeholder-app-textSubtle focus:outline-none focus:border-neutral-500 transition-colors" id="plateforme-custom-nom" name="plateforme_custom_nom" placeholder="Ou : plateforme personnalisée (nom)" type="text">
+<input class="h-[36px] bg-app-input border border-app-border rounded text-[12px] text-app-textPrimary px-3 placeholder-app-textSubtle focus:outline-none focus:border-neutral-500 transition-colors" name="plateforme_custom_mem" placeholder="Mémoire (GB)" type="text">
+<input class="h-[36px] bg-app-input border border-app-border rounded text-[12px] text-app-textPrimary px-3 placeholder-app-textSubtle focus:outline-none focus:border-neutral-500 transition-colors" name="plateforme_custom_watts" placeholder="Puissance (W)" type="text">
+<label class="col-span-2 flex items-center gap-2 text-[11px] text-app-textMuted mt-0.5">
+<input id="plateforme-custom-embarque" name="plateforme_custom_embarque" type="checkbox" value="oui">
+Carte embarquée, sur batterie
+</label>
+</div>
+</div>
+<div class="pt-1" id="batterie-field" style="display:none">
+<label class="block text-[11px] font-mono uppercase tracking-wider text-app-textMuted mb-1.5" for="batterie-input">Capacité Batterie (Wh)</label>
+<input class="w-full h-[42px] bg-app-input border border-app-border rounded text-[13.5px] text-app-textPrimary px-3.5 placeholder-app-textSubtle focus:outline-none focus:border-neutral-500 transition-colors" id="batterie-input" name="batterie_wh" placeholder="ex: 100" type="text">
 </div>
 <div class="pt-3">
 <button class="w-full h-[46px] bg-[#F2F2F2] hover:bg-white text-[#050505] font-medium text-[13.5px] rounded-md transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.99] focus:outline-none" type="submit">
@@ -176,5 +189,16 @@
     hidden.value = contextes[i];
     label.textContent = labels[i] + " TOKENS";
   });
+
+  const gpuSelect = document.getElementById('gpu-select');
+  const batterieField = document.getElementById('batterie-field');
+  const embarqueCustom = document.getElementById('plateforme-custom-embarque');
+  function majBatterieField() {
+    const option = gpuSelect.options[gpuSelect.selectedIndex];
+    batterieField.style.display = (option.dataset.embarque === 'oui' || embarqueCustom.checked) ? 'block' : 'none';
+  }
+  gpuSelect.addEventListener('change', majBatterieField);
+  embarqueCustom.addEventListener('change', majBatterieField);
+  majBatterieField();
 </script>
 </body></html>

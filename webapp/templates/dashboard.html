@@ -97,14 +97,27 @@ Retour
 </div>
 <div class="space-y-2 pt-1">
 <label class="block text-sm font-semibold text-slate-200">Plateforme cible</label>
-<select class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 appearance-none focus:outline-none focus:border-blue-500" name="plateforme">
+<select class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 appearance-none focus:outline-none focus:border-blue-500" id="gpu-select" name="plateforme">
 {% for p in plateformes %}
-<option value="{{ p.name }}"{% if p.name == plateforme.name %} selected{% endif %}>{{ p.name }}</option>
+<option value="{{ p.name }}" data-embarque="{{ 'oui' if p.unified_memory else 'non' }}"{% if p.name == plateforme.name %} selected{% endif %}>{{ p.name }}</option>
 {% endfor %}
 </select>
 <div class="flex items-center text-[11px] text-slate-400 space-x-1.5 pl-1">
 <span>Mémoire disponible : <strong class="text-slate-300 font-medium">{{ plateforme.memory_gb }} GB</strong></span>
 </div>
+<div class="grid grid-cols-2 gap-2 pt-1">
+<input class="col-span-2 bg-[#070b13] border border-slate-800 text-slate-200 text-xs rounded-xl px-3.5 py-2 placeholder-slate-500 focus:outline-none focus:border-blue-500" id="plateforme-custom-nom" name="plateforme_custom_nom" placeholder="Ou : plateforme personnalisée (nom)" type="text">
+<input class="bg-[#070b13] border border-slate-800 text-slate-200 text-xs rounded-xl px-3.5 py-2 placeholder-slate-500 focus:outline-none focus:border-blue-500" name="plateforme_custom_mem" placeholder="Mémoire (GB)" type="text">
+<input class="bg-[#070b13] border border-slate-800 text-slate-200 text-xs rounded-xl px-3.5 py-2 placeholder-slate-500 focus:outline-none focus:border-blue-500" name="plateforme_custom_watts" placeholder="Puissance (W)" type="text">
+<label class="col-span-2 flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+<input id="plateforme-custom-embarque" name="plateforme_custom_embarque" type="checkbox" value="oui">
+Carte embarquée, sur batterie
+</label>
+</div>
+</div>
+<div class="space-y-2 pt-1" id="batterie-field" style="display:none">
+<label class="block text-sm font-semibold text-slate-200">Capacité batterie (Wh)</label>
+<input class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 placeholder-slate-500 focus:outline-none focus:border-blue-500" name="batterie_wh" placeholder="ex: 100" type="text" value="{{ request.args.get('batterie_wh', '') }}">
 </div>
 <div class="pt-2">
 <button class="w-full py-3 px-4 rounded-xl font-medium text-sm bg-white hover:bg-slate-100 text-slate-950 transition-all" type="submit">Calculer l'estimation →</button>
@@ -193,18 +206,35 @@ Retour
 {% endif %}
 </div>
 </div>
-{% if not diagnostic.compat.compatible %}
-<div class="mt-5 pt-5 border-t border-slate-800/80 text-sm text-slate-300 space-y-1.5">
-{% if diagnostic.suggestion_precision %}
-<div>💡 Essayez la précision <strong class="text-blue-400">{{ diagnostic.suggestion_precision }}</strong> : elle devrait rentrer sur cette plateforme.</div>
-{% elif diagnostic.suggestion_multi_gpu %}
-<div>💡 Il faudrait environ <strong class="text-blue-400">{{ diagnostic.suggestion_multi_gpu }} GPU</strong> de ce type en parallèle.</div>
-{% elif diagnostic.plateformes_alternatives %}
-<div>💡 Plateformes compatibles : <strong class="text-blue-400">{{ diagnostic.plateformes_alternatives|join(', ') }}</strong></div>
+<div class="mt-5 pt-5 border-t border-slate-800/80 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-300">
+<span>Puissance : <strong class="text-slate-100">{{ diagnostic.power_watts }} W</strong></span>
+<span class="text-slate-500">•</span>
+<span>Ventilation : <strong class="text-slate-100">{{ diagnostic.note_thermique }}</strong></span>
+{% if diagnostic.autonomie_heures %}
+<span class="text-slate-500">•</span>
+<span>Autonomie estimée : <strong class="text-slate-100">{{ "%.1f"|format(diagnostic.autonomie_heures) }} h</strong></span>
 {% endif %}
 </div>
-{% endif %}
 </section>
+{% if not diagnostic.compat.compatible and diagnostic.meilleures_options %}
+<section class="bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg overflow-x-auto">
+<div class="mb-4 text-sm font-semibold text-slate-200">Meilleures combinaisons trouvées</div>
+<table class="w-full text-left text-xs">
+<thead><tr class="text-[10px] uppercase font-semibold text-slate-400 border-b border-slate-800/80"><th class="pb-2.5">Plateforme</th><th class="pb-2.5">Précision</th><th class="pb-2.5">GPU</th><th class="pb-2.5">Puissance</th><th class="pb-2.5 text-right">Ventilation</th></tr></thead>
+<tbody class="divide-y divide-slate-800/50">
+{% for o in diagnostic.meilleures_options[:5] %}
+<tr class="hover:bg-slate-900/30">
+<td class="py-2.5 text-slate-200 font-medium">{{ o.plateforme }}</td>
+<td class="py-2.5 text-blue-400 font-medium">{{ o.precision }}</td>
+<td class="py-2.5 text-slate-300">{{ o.nb_gpu }}</td>
+<td class="py-2.5 text-slate-300 font-mono">{{ o.power_watts }} W</td>
+<td class="py-2.5 text-right text-slate-300">{{ o.note_thermique }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</section>
+{% endif %}
 <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
 <div class="bg-[#0b101b]/90 border border-slate-800/80 rounded-2xl p-4 flex items-center space-x-3.5">
 <div><div class="text-xs text-slate-400">Mémoire des poids</div><div class="text-xl font-bold text-white mt-0.5">{{ "%.1f"|format(diagnostic.detail_go.poids) }} GB</div></div>
@@ -271,6 +301,40 @@ Retour
 {% endfor %}
 </tbody>
 </table>
+<article class="bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg lg:col-span-2">
+<div class="mb-4 text-sm font-semibold text-slate-200">Détail du calcul</div>
+<div class="space-y-3 font-mono text-xs">
+<div class="flex items-start text-slate-300">
+<span class="text-slate-500 mr-2">=</span>
+<div>
+<span class="text-slate-400 font-medium">Poids</span>
+<span class="text-slate-500 mx-1.5">=</span>
+<span class="text-slate-200">{{ "{:,}".format(specs.nb_param).replace(',', ' ') }} paramètres × {{ octets_precision }} o</span>
+<span class="text-slate-500 mx-1.5">=</span>
+<span class="text-slate-100">{{ "%.1f"|format(diagnostic.detail_go.poids) }} GB</span>
+</div>
+</div>
+<div class="flex items-start text-slate-300">
+<span class="text-slate-500 mr-2">=</span>
+<div>
+<span class="text-slate-400 font-medium">Cache KV</span>
+<span class="text-slate-500 mx-1.5">=</span>
+<span class="text-slate-200 leading-relaxed">2 × {{ specs.num_layers }} couches × {{ specs.num_kv_heads }} têtes KV × {{ specs.head_dim }} × {{ contexte }} tokens × 2 o</span>
+<span class="text-slate-500 mx-1.5">=</span>
+<span class="text-slate-100">{{ "%.2f"|format(diagnostic.detail_go.cache_kv) }} GB</span>
+</div>
+</div>
+<div class="flex items-start text-slate-300">
+<span class="text-slate-500 mr-2">=</span>
+<div>
+<span class="text-slate-400 font-medium">Mémoire totale</span>
+<span class="text-slate-500 mx-1.5">=</span>
+<span class="text-slate-200">poids + cache KV + buffers</span>
+<span class="text-slate-500 mx-1.5">=</span>
+<span class="text-slate-100">{{ "%.1f"|format(diagnostic.detail_go.total) }} GB</span>
+</div>
+</div>
+</div>
 </article>
 </section>
 </main>
@@ -290,5 +354,16 @@ Retour
     hidden.value = contextes[i];
     label.textContent = contextes[i] + " tokens";
   });
+
+  const gpuSelect = document.getElementById('gpu-select');
+  const batterieField = document.getElementById('batterie-field');
+  const embarqueCustom = document.getElementById('plateforme-custom-embarque');
+  function majBatterieField() {
+    const option = gpuSelect.options[gpuSelect.selectedIndex];
+    batterieField.style.display = (option.dataset.embarque === 'oui' || embarqueCustom.checked) ? 'block' : 'none';
+  }
+  gpuSelect.addEventListener('change', majBatterieField);
+  embarqueCustom.addEventListener('change', majBatterieField);
+  majBatterieField();
 </script>
 </body></html>

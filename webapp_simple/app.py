@@ -2,13 +2,9 @@
 # fonctionne via une interface graphique, avant de la rendre jolie plus tard.
 # Ne dépend que du package llm_modelfit installé (pip install), pas d'un
 # dossier voisin : ce fichier + templates/ peuvent être envoyés seuls.
-import json
-from pathlib import Path
-
-import llm_modelfit
 from flask import Flask, render_template, request
 
-from llm_modelfit.modeles import get_specs
+from llm_modelfit.modeles import get_specs, lister_modeles
 from llm_modelfit.engine import octets_vers_go
 from llm_modelfit.comparaison import charger_plateformes, diagnostiquer, comparer_toutes_plateformes
 from llm_modelfit.historique import ajouter_historique, charger_historique
@@ -17,11 +13,10 @@ app = Flask(__name__)
 
 PRECISIONS = ["FP32", "FP16", "INT8", "INT4"]
 CONTEXTES = [2048, 4096, 8192, 16384, 32768]
-CHEMIN_MODELES = Path(llm_modelfit.__file__).parent / "data" / "models.json"
 
 
 def modeles_connus():
-    return json.load(open(CHEMIN_MODELES))
+    return lister_modeles()
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -35,13 +30,15 @@ def index():
         precision = request.form.get("precision")
         contexte = int(request.form.get("contexte"))
         plateforme_nom = request.form.get("plateforme")
+        batterie = request.form.get("batterie_wh")
+        batterie = float(batterie) if batterie else None
 
         plateformes = charger_plateformes()
         plateforme = next(p for p in plateformes if p["name"] == plateforme_nom)
 
         try:
             specs = get_specs(modele_id)
-            resultat = diagnostiquer(specs, precision, contexte, plateforme)
+            resultat = diagnostiquer(specs, precision, contexte, plateforme, capacite_batterie_wh=batterie)
             ajouter_historique(modele_id, precision, contexte, plateforme["name"], resultat)
             comparaisons = comparer_toutes_plateformes(resultat["detail_go"]["total"])
         except Exception as e:
