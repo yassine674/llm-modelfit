@@ -1,7 +1,11 @@
+{% from '_icones_taches.html' import icone_tache %}
 <!DOCTYPE html><html class="dark h-full" lang="fr"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>LLM Memory Estimator — Dashboard Détaillé</title>
+<link href="{{ url_for('static', filename='img/favicon.svg') }}?v=2" rel="icon" type="image/svg+xml">
+<link href="{{ url_for('static', filename='img/favicon-32.png') }}?v=2" rel="icon" sizes="32x32" type="image/png">
+<link href="{{ url_for('static', filename='img/apple-touch-icon.png') }}?v=2" rel="apple-touch-icon">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script>
     tailwind.config = {
@@ -20,39 +24,47 @@
     ::-webkit-scrollbar-track { background: #070a11; }
     ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 9999px; }
     input[type=range]::-webkit-slider-thumb { appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 3px solid #3b82f6; cursor: pointer; }
+    @keyframes mascot-blob {
+      0%, 100% { border-radius: 58% 42% 55% 45% / 52% 58% 42% 48%; }
+      33% { border-radius: 45% 55% 48% 52% / 58% 44% 56% 42%; }
+      66% { border-radius: 52% 48% 42% 58% / 45% 52% 48% 55%; }
+    }
+    @keyframes mascot-blink {
+      0%, 42%, 46%, 100% { transform: scaleY(1); }
+      44% { transform: scaleY(.12); }
+    }
+    .mascot { animation: mascot-blob 9s ease-in-out infinite; transition: transform .44s cubic-bezier(.22,1.5,.5,1); }
+    .mascot:hover { transform: scale(1.08) rotate(-4deg); }
+    .mascot-eye { animation: mascot-blink 6.5s infinite; }
+    @keyframes mascot-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    .mascot-float { display: inline-flex; animation: mascot-float 3.4s ease-in-out infinite; }
   </style>
 </head>
 <body class="bg-[#05070c] text-slate-200 min-h-screen relative overflow-x-hidden selection:bg-blue-600 selection:text-white">
-<div class="fixed top-0 right-0 w-[550px] h-[550px] pointer-events-none opacity-40 mix-blend-screen z-0 overflow-hidden">
-<svg class="w-full h-full transform translate-x-12 -translate-y-12" viewBox="0 0 400 400">
-<defs>
-<radialGradient cx="35%" cy="30%" id="sphereGrad1" r="65%">
-<stop offset="0%" stop-color="#94a3b8" stop-opacity="0.8"></stop><stop offset="30%" stop-color="#475569" stop-opacity="0.6"></stop>
-<stop offset="70%" stop-color="#1e293b" stop-opacity="0.8"></stop><stop offset="100%" stop-color="#020617" stop-opacity="1"></stop>
-</radialGradient>
-<radialGradient cx="30%" cy="30%" id="sphereGrad2" r="70%">
-<stop offset="0%" stop-color="#64748b" stop-opacity="0.9"></stop><stop offset="45%" stop-color="#334155" stop-opacity="0.6"></stop>
-<stop offset="100%" stop-color="#020617" stop-opacity="1"></stop>
-</radialGradient>
-</defs>
-<g>
-<circle cx="310" cy="120" fill="url(#sphereGrad1)" r="54"></circle>
-<circle cx="210" cy="220" fill="url(#sphereGrad2)" r="48"></circle>
-<circle cx="330" cy="270" fill="url(#sphereGrad1)" r="62"></circle>
-<line stroke="#334155" stroke-linecap="round" stroke-width="16" x1="310" x2="210" y1="120" y2="220" opacity="0.6"></line>
-<line stroke="#334155" stroke-linecap="round" stroke-width="18" x1="210" x2="330" y1="220" y2="270" opacity="0.6"></line>
-</g>
-</svg>
+<div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+<div class="absolute -top-32 right-[-10%] w-[780px] h-[780px] rounded-full" style="background:#4f6bed; opacity:0.24; filter: blur(130px);"></div>
+<div class="absolute top-[18%] right-[-4%] w-[600px] h-[600px] rounded-full" style="background:#8b5cf6; opacity:0.16; filter: blur(120px);"></div>
+<div class="absolute bottom-[-12%] right-[6%] w-[560px] h-[560px] rounded-full" style="background:#22d3ee; opacity:0.14; filter: blur(110px);"></div>
+<div class="absolute inset-0" style="background-image:url('{{ url_for('static', filename='img/grain.svg') }}'); background-size: 220px 220px; opacity:0.045; mix-blend-mode: overlay;"></div>
 </div>
 <header class="relative z-10 w-full border-b border-slate-800/80 bg-[#070b13]/80 backdrop-blur-md px-6 py-3.5 flex items-center justify-between">
 <div class="flex items-center space-x-3.5">
-<div class="w-7 h-7 flex items-center justify-center text-white">
-<svg class="w-6 h-6 stroke-current stroke-[1.75]" fill="none" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-<path d="m12 3-8 4.5 8 4.5 8-4.5L12 3Z"></path><path d="m4 12 8 4.5 8-4.5"></path><path d="m4 16.5 8 4.5 8-4.5"></path>
-</svg>
-</div>
+<a class="flex items-center space-x-3.5 group" href="{{ url_for('index') }}">
+<span class="mascot-float">
+<span aria-hidden="true" class="mascot inline-flex shrink-0 items-center justify-center w-6 h-6 bg-gradient-to-br from-[#5b8def] to-[#8b5cf6]">
+<span class="flex gap-[3px] translate-x-[2px] translate-y-[1.5px]">
+<span class="mascot-eye block w-[2.5px] h-[7px] rounded-[3px] bg-[#070b13]"></span>
+<span class="mascot-eye block w-[2.5px] h-[7px] rounded-[3px] bg-[#070b13]"></span>
+</span>
+</span>
+</span>
+<span class="text-sm font-semibold tracking-tight text-white group-hover:text-slate-200 transition-colors">LLM Memory Estimator</span>
+</a>
 <div class="flex items-center space-x-2 text-sm font-semibold tracking-tight text-white">
-<span>LLM Memory Estimator</span><span class="text-slate-500 font-normal">›</span>
+<span class="text-slate-500 font-normal">›</span>
 <span class="text-slate-400 font-normal text-xs sm:text-sm">Estimation mémoire</span>
 </div>
 </div>
@@ -60,7 +72,7 @@
 </header>
 <div class="relative z-10 max-w-[1720px] mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 <aside class="lg:col-span-3 space-y-6">
-<section class="bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-xl backdrop-blur-md">
+<section class="relative z-30 bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-xl">
 <a class="inline-flex items-center text-xs font-medium text-slate-400 hover:text-white transition-colors mb-4" href="{{ url_for('index') }}">
 <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
 Retour
@@ -69,12 +81,28 @@ Retour
 <form class="space-y-6" method="get" action="{{ url_for('dashboard') }}">
 <div class="space-y-2">
 <label class="block text-sm font-semibold text-slate-200">Modèle</label>
-<select class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 appearance-none focus:outline-none focus:border-blue-500" name="modele">
-{% for m in modeles %}
-<option value="{{ m.hf_id }}"{% if m.hf_id == modele_id %} selected{% endif %}>{{ m.name }}</option>
+<div class="flex flex-wrap gap-1.5">
+{% for f in familles %}
+<button class="famille-btn inline-flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full bg-[#070b13] border border-slate-800 text-[11.5px] text-slate-200 hover:border-blue-500 transition-colors" data-recherche="{{ f.recherche }}" type="button">
+{% if f.logo %}<img alt="" class="w-4 h-4 rounded-full object-cover" src="{{ f.logo }}">{% else %}<span class="w-4 h-4 rounded-full bg-slate-700"></span>{% endif %}
+{{ f.nom }}
+</button>
 {% endfor %}
-</select>
-<input class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-xs rounded-xl px-3.5 py-2 placeholder-slate-500 focus:outline-none focus:border-blue-500" name="modele_custom" placeholder="Ou : org/nom-du-modèle" type="text">
+</div>
+<label class="block text-sm font-semibold text-slate-200">Tâche</label>
+<div class="flex flex-wrap gap-1.5">
+{% for t in taches %}
+<button class="tache-btn inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] transition-colors {{ 'border-blue-500 text-blue-400 bg-blue-950/30' if loop.first else 'border-slate-800 text-slate-400 hover:border-slate-600' }}" data-active="{{ 'true' if loop.first else 'false' }}" data-tache="{{ t.valeur }}" type="button">
+<svg class="h-3 w-3 shrink-0" fill="none" stroke="{{ t.couleur }}" stroke-width="2" viewBox="0 0 24 24">{{ icone_tache(t.icone) }}</svg>
+{{ t.nom }}
+</button>
+{% endfor %}
+</div>
+<div class="relative">
+<input autocomplete="off" class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 placeholder-slate-500 focus:outline-none focus:border-blue-500" id="model-search" placeholder="Rechercher un modèle" type="text" value="{{ modele_id or '' }}">
+<div class="hidden absolute z-20 mt-1 w-full bg-[#0b101b] border border-slate-800 rounded-xl shadow-xl max-h-64 overflow-y-auto" id="model-suggestions"></div>
+</div>
+<input id="model-id" name="modele" type="hidden" value="{{ modele_id or '' }}">
 </div>
 <div class="space-y-2 pt-1">
 <label class="block text-sm font-semibold text-slate-200">Précision numérique</label>
@@ -97,16 +125,32 @@ Retour
 </div>
 <div class="space-y-2 pt-1">
 <label class="block text-sm font-semibold text-slate-200">Plateforme cible</label>
-<select class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 appearance-none focus:outline-none focus:border-blue-500" id="gpu-select" name="plateforme">
+<div class="relative">
+<button class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 flex items-center gap-2.5 focus:outline-none focus:border-blue-500" id="plateforme-dropdown-btn" type="button">
+<img alt="" class="w-6 h-6 object-contain rounded-sm bg-[#0b101b] shrink-0" id="plateforme-dropdown-img" src="{{ url_for('static', filename='img/hf/' + plateforme.image) }}">
+<span class="flex-1 truncate text-left" id="plateforme-dropdown-label">{{ plateforme.name }}</span>
+<svg class="h-3.5 w-3.5 text-slate-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<div class="hidden absolute z-20 w-full bg-[#0b101b] border border-slate-800 rounded-xl shadow-xl max-h-56 overflow-y-auto" id="plateforme-dropdown-list">
 {% for p in plateformes %}
-<option value="{{ p.name }}" data-embarque="{{ 'oui' if p.unified_memory else 'non' }}"{% if p.name == plateforme.name %} selected{% endif %}>{{ p.name }}</option>
+<button class="plateforme-option w-full flex items-center gap-2.5 px-3.5 py-2 text-left hover:bg-slate-900 transition-colors" data-embarque="{{ 'oui' if p.unified_memory else 'non' }}" data-image="{{ url_for('static', filename='img/hf/' + p.image) }}" data-label="{{ p.name }}" data-name="{{ p.name }}" type="button">
+<img alt="" class="w-6 h-6 object-contain rounded-sm bg-[#070b13] shrink-0" src="{{ url_for('static', filename='img/hf/' + p.image) }}">
+<span class="flex-1 truncate text-[13px] text-slate-200">{{ p.name }}</span>
+<span class="text-[11px] text-slate-500 shrink-0">{{ p.memory_gb }} GB</span>
+</button>
 {% endfor %}
-</select>
+</div>
+<input id="plateforme-value" name="plateforme" type="hidden" value="{{ plateforme.name }}" data-embarque="{{ 'oui' if plateforme.unified_memory else 'non' }}">
+</div>
 <div class="flex items-center text-[11px] text-slate-400 space-x-1.5 pl-1">
 <span>Mémoire disponible : <strong class="text-slate-300 font-medium">{{ plateforme.memory_gb }} GB</strong></span>
 </div>
-<div class="grid grid-cols-2 gap-2 pt-1">
-<input class="col-span-2 bg-[#070b13] border border-slate-800 text-slate-200 text-xs rounded-xl px-3.5 py-2 placeholder-slate-500 focus:outline-none focus:border-blue-500" id="plateforme-custom-nom" name="plateforme_custom_nom" placeholder="Ou : plateforme personnalisée (nom)" type="text">
+<button class="w-full flex items-center justify-center gap-1.5 h-[34px] rounded-xl border border-dashed border-slate-700 text-[11.5px] text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors" id="ajouter-plateforme-btn" type="button">
+<svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"></path></svg>
+Add your hardware
+</button>
+<div class="hidden grid grid-cols-2 gap-2 pt-1" id="plateforme-custom-fields">
+<input class="col-span-2 bg-[#070b13] border border-slate-800 text-slate-200 text-xs rounded-xl px-3.5 py-2 placeholder-slate-500 focus:outline-none focus:border-blue-500" id="plateforme-custom-nom" name="plateforme_custom_nom" placeholder="Nom de la plateforme" type="text">
 <input class="bg-[#070b13] border border-slate-800 text-slate-200 text-xs rounded-xl px-3.5 py-2 placeholder-slate-500 focus:outline-none focus:border-blue-500" name="plateforme_custom_mem" placeholder="Mémoire (GB)" type="text">
 <input class="bg-[#070b13] border border-slate-800 text-slate-200 text-xs rounded-xl px-3.5 py-2 placeholder-slate-500 focus:outline-none focus:border-blue-500" name="plateforme_custom_watts" placeholder="Puissance (W)" type="text">
 <label class="col-span-2 flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
@@ -116,8 +160,8 @@ Carte embarquée, sur batterie
 </div>
 </div>
 <div class="space-y-2 pt-1" id="batterie-field" style="display:none">
-<label class="block text-sm font-semibold text-slate-200">Capacité batterie (Wh)</label>
-<input class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 placeholder-slate-500 focus:outline-none focus:border-blue-500" name="batterie_wh" placeholder="ex: 100" type="text" value="{{ request.args.get('batterie_wh', '') }}">
+<label class="block text-sm font-semibold text-slate-200">Capacité batterie (mAh)</label>
+<input class="w-full bg-[#070b13] border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 placeholder-slate-500 focus:outline-none focus:border-blue-500" name="batterie_mah" placeholder="ex: 5000" type="text" value="{{ request.args.get('batterie_mah', '') }}">
 </div>
 <div class="pt-2">
 <button class="w-full py-3 px-4 rounded-xl font-medium text-sm bg-white hover:bg-slate-100 text-slate-950 transition-all" type="submit">Calculer l'estimation →</button>
@@ -147,6 +191,17 @@ Carte embarquée, sur batterie
 </section>
 </aside>
 <main class="lg:col-span-9 space-y-6">
+{% if specs.poids_seulement %}
+<div class="flex items-start gap-3 px-4 py-3 rounded-xl bg-blue-950/30 border border-blue-800/50 text-[13px] text-blue-300 leading-relaxed">
+<svg class="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4M12 8h.01" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<div>{{ avertissement }} Ce modèle n'est pas un LLM texte classique (probablement un modèle de diffusion/image) : seul le poids est estimé, sans cache KV ni notion de contexte — la longueur de contexte ci-contre n'a pas d'effet sur ce résultat.</div>
+</div>
+{% elif avertissement %}
+<div class="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-950/30 border border-amber-800/50 text-[13px] text-amber-300 leading-relaxed">
+<svg class="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+<div>{{ avertissement }} — valeurs approximatives issues de la base locale de secours. Acceptez la licence sur Hugging Face pour des valeurs exactes.</div>
+</div>
+{% endif %}
 <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 <div>
 <div class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Résultats de l'estimation</div>
@@ -166,12 +221,26 @@ Carte embarquée, sur batterie
 <div class="relative w-28 h-28 shrink-0 flex items-center justify-center">
 <svg class="w-28 h-28 transform -rotate-90" viewBox="0 0 100 100">
 <circle cx="50" cy="50" fill="transparent" r="40" stroke="#161f30" stroke-width="8"></circle>
-<circle cx="50" cy="50" fill="transparent" r="40" stroke="{{ '#0284c7' if diagnostic.compat.compatible else '#dc2626' }}" stroke-dasharray="251.2" stroke-dashoffset="{{ 251.2 - (251.2 * (diagnostic.compat.taux_go if diagnostic.compat.taux_go < 100 else 100) / 100) }}" stroke-linecap="round" stroke-width="8"></circle>
+{% set ns = namespace(avance=0) %}
+{% for s in segments %}
+<circle cx="50" cy="50" fill="transparent" r="40" stroke="{{ s.couleur }}" stroke-dasharray="{{ 251.2 * s.pct / 100 }} {{ 251.2 - 251.2 * s.pct / 100 }}" stroke-dashoffset="{{ -251.2 * ns.avance / 100 }}" stroke-width="8"></circle>
+{% set ns.avance = ns.avance + s.pct %}
+{% endfor %}
 </svg>
 <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
 <span class="text-xl font-bold text-white tracking-tight">{{ diagnostic.compat.taux_go }}%</span>
 <span class="text-[9px] uppercase tracking-wider text-slate-400">utilisation</span>
 </div>
+</div>
+<div class="shrink-0 space-y-1.5">
+{% for s in segments %}
+<div class="flex items-center gap-2 text-[11px]">
+<span class="w-2 h-2 rounded-full shrink-0" style="background:{{ s.couleur }}"></span>
+<span class="text-slate-400">{{ s.nom }}</span>
+<span class="text-slate-200 font-mono">{{ "%.2f"|format(s.valeur) }} GB</span>
+<span class="text-slate-500">({{ s.pct }}%)</span>
+</div>
+{% endfor %}
 </div>
 <div class="flex-1 w-full space-y-3">
 <div>
@@ -281,26 +350,29 @@ Carte embarquée, sur batterie
 </div>
 </div>
 </article>
-<article class="bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg overflow-x-auto lg:col-span-2">
+<article class="bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg lg:col-span-2">
 <div class="mb-4 text-sm font-semibold text-slate-200">Compatibilité des plateformes</div>
-<table class="w-full text-left text-xs">
-<thead><tr class="text-[10px] uppercase font-semibold text-slate-400 border-b border-slate-800/80"><th class="pb-2.5">Plateforme</th><th class="pb-2.5">Statut</th><th class="pb-2.5 text-right">Mémoire utilisée</th></tr></thead>
-<tbody class="divide-y divide-slate-800/50">
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
 {% for c in comparaisons %}
-<tr class="hover:bg-slate-900/30">
-<td class="py-2.5 text-slate-200 font-medium">{{ c.plateforme }}</td>
-<td class="py-2.5">
+<div class="bg-[#070b13] border border-slate-800/80 rounded-xl p-3.5 flex gap-3 items-start">
+<img alt="" class="w-10 h-10 shrink-0 mt-0.5 object-contain rounded-md bg-[#0b101b]" src="{{ url_for('static', filename='img/hf/' + c.image) }}">
+<div class="min-w-0 flex-1">
+<div class="flex items-center justify-between gap-2 mb-1.5">
+<span class="text-[12.5px] font-medium text-slate-200 truncate">{{ c.plateforme }}</span>
 {% if c.compatible %}
-<span class="inline-flex items-center text-[11px] font-medium text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5"></span>OK</span>
+<span class="inline-flex items-center shrink-0 text-[10px] font-medium text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 rounded-full px-2 py-0.5">Compatible</span>
 {% else %}
-<span class="inline-flex items-center text-[11px] font-medium text-red-400"><span class="w-1.5 h-1.5 rounded-full bg-red-400 mr-1.5"></span>Non</span>
+<span class="inline-flex items-center shrink-0 text-[10px] font-medium text-red-400 bg-red-950/40 border border-red-800/50 rounded-full px-2 py-0.5">Non</span>
 {% endif %}
-</td>
-<td class="py-2.5 text-right font-mono text-slate-300">{{ c.requis_go }} / {{ c.dispo_go }} GB <span class="{{ 'text-red-400 font-medium' if not c.compatible else 'text-slate-500' }}">({{ c.taux_go }}%)</span></td>
-</tr>
+</div>
+<div class="w-full h-1.5 bg-slate-900 border border-slate-800 rounded-full overflow-hidden mb-1">
+<div class="h-full rounded-full {{ 'bg-emerald-500' if c.compatible else 'bg-red-500' }}" style="width: {{ c.taux_go if c.taux_go < 100 else 100 }}%;"></div>
+</div>
+<div class="text-[10.5px] font-mono text-slate-400">{{ c.requis_go }} / {{ c.dispo_go }} GB <span class="{{ 'text-red-400' if not c.compatible else 'text-slate-500' }}">({{ c.taux_go }}%)</span></div>
+</div>
+</div>
 {% endfor %}
-</tbody>
-</table>
+</div>
 <article class="bg-[#0b101b]/90 border border-slate-800/90 rounded-2xl p-5 shadow-lg lg:col-span-2">
 <div class="mb-4 text-sm font-semibold text-slate-200">Détail du calcul</div>
 <div class="space-y-3 font-mono text-xs">
@@ -314,6 +386,18 @@ Carte embarquée, sur batterie
 <span class="text-slate-100">{{ "%.1f"|format(diagnostic.detail_go.poids) }} GB</span>
 </div>
 </div>
+{% if specs.poids_seulement %}
+<div class="flex items-start text-slate-300">
+<span class="text-slate-500 mr-2">=</span>
+<div>
+<span class="text-slate-400 font-medium">Cache KV</span>
+<span class="text-slate-500 mx-1.5">=</span>
+<span class="text-slate-200 leading-relaxed">non applicable (pas de décodeur texte identifié sur ce modèle)</span>
+<span class="text-slate-500 mx-1.5">=</span>
+<span class="text-slate-100">0 GB</span>
+</div>
+</div>
+{% else %}
 <div class="flex items-start text-slate-300">
 <span class="text-slate-500 mr-2">=</span>
 <div>
@@ -324,6 +408,7 @@ Carte embarquée, sur batterie
 <span class="text-slate-100">{{ "%.2f"|format(diagnostic.detail_go.cache_kv) }} GB</span>
 </div>
 </div>
+{% endif %}
 <div class="flex items-start text-slate-300">
 <span class="text-slate-500 mr-2">=</span>
 <div>
@@ -355,15 +440,151 @@ Carte embarquée, sur batterie
     label.textContent = contextes[i] + " tokens";
   });
 
-  const gpuSelect = document.getElementById('gpu-select');
+  const plateformeValue = document.getElementById('plateforme-value');
+  const plateformeBtn = document.getElementById('plateforme-dropdown-btn');
+  const plateformeList = document.getElementById('plateforme-dropdown-list');
+  const plateformeImg = document.getElementById('plateforme-dropdown-img');
+  const plateformeLabel = document.getElementById('plateforme-dropdown-label');
   const batterieField = document.getElementById('batterie-field');
   const embarqueCustom = document.getElementById('plateforme-custom-embarque');
+
   function majBatterieField() {
-    const option = gpuSelect.options[gpuSelect.selectedIndex];
-    batterieField.style.display = (option.dataset.embarque === 'oui' || embarqueCustom.checked) ? 'block' : 'none';
+    batterieField.style.display = (plateformeValue.dataset.embarque === 'oui' || embarqueCustom.checked) ? 'block' : 'none';
   }
-  gpuSelect.addEventListener('change', majBatterieField);
+
+  function positionnerListe(bouton, liste) {
+    const espaceBas = window.innerHeight - bouton.getBoundingClientRect().bottom;
+    liste.classList.remove('top-full', 'mt-1', 'bottom-full', 'mb-1');
+    if (espaceBas < 240) {
+      liste.classList.add('bottom-full', 'mb-1');
+    } else {
+      liste.classList.add('top-full', 'mt-1');
+    }
+  }
+
+  plateformeBtn.addEventListener('click', () => {
+    if (plateformeList.classList.contains('hidden')) positionnerListe(plateformeBtn, plateformeList);
+    plateformeList.classList.toggle('hidden');
+  });
+  document.querySelectorAll('.plateforme-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      plateformeValue.value = btn.dataset.name;
+      plateformeValue.dataset.embarque = btn.dataset.embarque;
+      plateformeImg.src = btn.dataset.image;
+      plateformeLabel.textContent = btn.dataset.label;
+      plateformeList.classList.add('hidden');
+      majBatterieField();
+    });
+  });
+  document.addEventListener('click', (e) => {
+    if (!plateformeBtn.contains(e.target) && !plateformeList.contains(e.target)) {
+      plateformeList.classList.add('hidden');
+    }
+  });
   embarqueCustom.addEventListener('change', majBatterieField);
   majBatterieField();
+
+  document.getElementById('ajouter-plateforme-btn').addEventListener('click', function () {
+    document.getElementById('plateforme-custom-fields').classList.toggle('hidden');
+  });
+
+  const modelSearch = document.getElementById('model-search');
+  const modelId = document.getElementById('model-id');
+  const modelSuggestions = document.getElementById('model-suggestions');
+  const tacheBtns = Array.from(document.querySelectorAll('.tache-btn'));
+  let tacheActive = tacheBtns.find(b => b.dataset.active === 'true');
+  let debounceTimer = null;
+
+  tacheBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      tacheBtns.forEach(b => {
+        b.dataset.active = 'false';
+        b.classList.remove('border-blue-500', 'text-blue-400', 'bg-blue-950/30');
+        b.classList.add('border-slate-800', 'text-slate-400');
+      });
+      btn.dataset.active = 'true';
+      btn.classList.add('border-blue-500', 'text-blue-400', 'bg-blue-950/30');
+      btn.classList.remove('border-slate-800', 'text-slate-400');
+      tacheActive = btn;
+      if (modelSearch.value.trim().length >= 2) rechercherModeles(modelSearch.value.trim());
+    });
+  });
+
+  function rechercherModeles(q) {
+    const tache = tacheActive ? tacheActive.dataset.tache : '';
+    fetch('/api/recherche-modeles?q=' + encodeURIComponent(q) + '&tache=' + encodeURIComponent(tache))
+      .then(r => r.json())
+      .then(data => afficherSuggestions(data.modeles, data.entreprises));
+  }
+
+  function afficherSuggestions(resultats, entreprises) {
+    resultats = resultats || [];
+    entreprises = entreprises || [];
+    if (resultats.length === 0 && entreprises.length === 0) {
+      modelSuggestions.classList.add('hidden');
+      modelSuggestions.innerHTML = '';
+      return;
+    }
+    const htmlEntreprises = entreprises.map(e =>
+      `<button type="button" class="suggestion-entreprise-btn w-full flex items-center gap-2.5 text-left px-3.5 py-2 text-[13px] text-slate-200 hover:bg-slate-900 transition-colors border-b border-slate-800" data-recherche="${e.nom}">
+        ${e.avatar ? `<img src="${e.avatar}" class="w-5 h-5 rounded-full shrink-0 object-cover" alt="">` : `<span class="w-5 h-5 rounded-full shrink-0 bg-slate-800"></span>`}
+        <span>Modèles <strong>${e.nom_complet || e.nom}</strong></span>
+      </button>`
+    ).join('');
+    const htmlModeles = resultats.map(m =>
+      `<button type="button" class="suggestion-btn w-full flex items-center gap-2.5 text-left px-3.5 py-2 text-[13px] text-slate-200 hover:bg-slate-900 transition-colors" data-id="${m.id}">
+        ${m.avatar ? `<img src="${m.avatar}" class="w-5 h-5 rounded-sm shrink-0 object-cover" alt="">` : `<span class="w-5 h-5 rounded-sm shrink-0 bg-slate-800"></span>`}
+        <span class="font-mono truncate">${m.id}</span>
+      </button>`
+    ).join('');
+    modelSuggestions.innerHTML = htmlEntreprises + htmlModeles;
+    modelSuggestions.classList.remove('hidden');
+  }
+
+  modelSearch.addEventListener('input', () => {
+    modelId.value = '';
+    const q = modelSearch.value.trim();
+    clearTimeout(debounceTimer);
+    if (q.length < 1) {
+      modelSuggestions.classList.add('hidden');
+      return;
+    }
+    debounceTimer = setTimeout(() => rechercherModeles(q), 300);
+  });
+
+  modelSuggestions.addEventListener('click', (e) => {
+    const entrepriseBtn = e.target.closest('.suggestion-entreprise-btn');
+    if (entrepriseBtn) {
+      modelSearch.value = entrepriseBtn.dataset.recherche;
+      rechercherModeles(entrepriseBtn.dataset.recherche);
+      return;
+    }
+    const btn = e.target.closest('.suggestion-btn');
+    if (!btn) return;
+    modelSearch.value = btn.dataset.id;
+    modelId.value = btn.dataset.id;
+    modelSuggestions.classList.add('hidden');
+  });
+
+  document.querySelectorAll('.famille-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modelSearch.value = btn.dataset.recherche;
+      modelSearch.focus();
+      rechercherModeles(btn.dataset.recherche);
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!modelSearch.contains(e.target) && !modelSuggestions.contains(e.target)) {
+      modelSuggestions.classList.add('hidden');
+    }
+  });
+
+  document.querySelector('form').addEventListener('submit', (e) => {
+    if (!modelId.value) {
+      if (!modelSearch.value.trim()) { e.preventDefault(); return; }
+      modelId.value = modelSearch.value.trim();
+    }
+  });
 </script>
 </body></html>

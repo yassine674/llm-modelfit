@@ -1,7 +1,11 @@
-<!DOCTYPE html><html class="h-full bg-[#050505]" lang="fr"><head>
+{% from '_icones_taches.html' import icone_tache %}
+<!DOCTYPE html><html class="min-h-screen bg-[#050505]" lang="fr"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>LLM Memory Estimator</title>
+<link href="{{ url_for('static', filename='img/favicon.svg') }}?v=2" rel="icon" type="image/svg+xml">
+<link href="{{ url_for('static', filename='img/favicon-32.png') }}?v=2" rel="icon" sizes="32x32" type="image/png">
+<link href="{{ url_for('static', filename='img/apple-touch-icon.png') }}?v=2" rel="apple-touch-icon">
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script>
     tailwind.config = {
@@ -40,124 +44,284 @@
       background-color: #F2F2F2; height: 16px; width: 16px; border-radius: 9999px;
       border: 2px solid #050505; cursor: pointer;
     }
+    @keyframes mascot-blob {
+      0%, 100% { border-radius: 58% 42% 55% 45% / 52% 58% 42% 48%; }
+      33% { border-radius: 45% 55% 48% 52% / 58% 44% 56% 42%; }
+      66% { border-radius: 52% 48% 42% 58% / 45% 52% 48% 55%; }
+    }
+    @keyframes mascot-blink {
+      0%, 42%, 46%, 100% { transform: scaleY(1); }
+      44% { transform: scaleY(.12); }
+    }
+    .mascot {
+      animation: mascot-blob 9s ease-in-out infinite;
+      transition: transform .44s cubic-bezier(.22,1.5,.5,1);
+    }
+    .mascot:hover { transform: scale(1.08) rotate(-4deg); }
+    .mascot-eye { animation: mascot-blink 6.5s infinite; }
+    @keyframes mascot-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-3px); }
+    }
+    .mascot-float { display: inline-flex; animation: mascot-float 3.4s ease-in-out infinite; }
+    #orb-compagnon { transition: transform .5s cubic-bezier(.22,1.5,.5,1); }
+    #orb-yeux { transition: transform .12s ease-out; }
+    :root { --spring: linear(0, 0.062 3.4%, 0.24 7.5%, 0.51 12.5%, 0.76 17.9%, 0.905 22.4%, 0.997 27.2%, 1.038 32.4%, 1.05 37.4%, 1.044 42.7%, 1.028 49.2%, 1.012 56.9%, 1.003 65.7%, 0.999 76%, 1); }
+    #contexte-slider .tick { position: absolute; top: 50%; width: 4px; height: 4px; border-radius: 999px; background: rgba(255,255,255,.3); translate: -50% -50%; }
+    #contexte-knob { transition: scale 140ms cubic-bezier(.32,.72,0,1); }
+    #contexte-slider.is-dragging #contexte-knob { scale: 1.06; box-shadow: 0 2px 4px rgba(0,0,0,.4), 0 4px 12px rgba(0,0,0,.35) !important; }
+    #contexte-slider.is-snapping #contexte-knob { transition: left 380ms var(--spring), scale 140ms cubic-bezier(.32,.72,0,1); }
+    #contexte-slider.is-snapping #contexte-fill { transition: width 380ms var(--spring); }
+    @property --metal-angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+    @keyframes metal-spin { to { --metal-angle: 360deg; } }
+    /* anneau fin "métal liquide chromatique" : la majeure partie de l'anneau reste
+       discrète/grise, avec une seule zone de couleurs (cyan -> rose -> or) qui tourne,
+       d'après le rendu réel de metal.jakubantalik.com (preset "chromatic") */
+    .metal-ring { position: relative; isolation: isolate; }
+    .metal-ring::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      padding: 1.5px;
+      background: conic-gradient(from var(--metal-angle, 0deg),
+        #3a3a3e 0deg, #3a3a3e 20deg,
+        #7fe3c8 55deg, #bfe8d8 70deg, #e895c9 100deg, #f3b98a 130deg,
+        #3a3a3e 158deg, #3a3a3e 300deg,
+        #5a4a5c 322deg,
+        #3a3a3e 346deg, #3a3a3e 360deg);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: metal-spin 10s linear infinite;
+      pointer-events: none;
+    }
+    button[type="submit"].metal-ring { background: #141517; }
+    button[type="submit"].metal-ring > span { position: relative; z-index: 1; }
   </style>
 </head>
-<body class="h-full bg-[#050505] text-app-textPrimary font-sans antialiased overflow-x-hidden flex flex-col justify-between selection:bg-neutral-800 selection:text-white">
-<header class="h-[60px] min-h-[60px] w-full border-b border-app-border bg-[#050505] px-6 flex items-center justify-between z-20">
-<div class="flex items-center space-x-3">
-<div aria-hidden="true" class="w-5 h-5 flex items-center justify-center border border-white/20 rounded-sm bg-neutral-900">
-<svg class="w-3.5 h-3.5 text-[#F2F2F2]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-<polygon points="12 2 2 7 12 12 22 7 12 2" stroke-linejoin="round"></polygon>
-<polyline points="2 17 12 22 22 17" stroke-linejoin="round"></polyline>
-<polyline points="2 12 12 17 22 12" stroke-linejoin="round"></polyline>
-</svg>
-</div>
-<span class="text-[13.5px] font-medium tracking-tight text-[#F2F2F2]">LLM Memory Estimator</span>
-</div>
-<nav aria-label="Navigation secondaire" class="flex items-center space-x-6 text-[13px] text-app-textMuted font-normal">
-<a class="hover:text-app-textPrimary transition-colors" href="{{ url_for('historique') }}">Historique</a>
-<span class="text-neutral-700 select-none">•</span>
-<span class="font-mono text-xs text-app-textSubtle tracking-wide">v1.0.0</span>
+<body class="min-h-screen bg-[#050505] text-app-textPrimary font-sans antialiased overflow-x-hidden flex flex-col selection:bg-neutral-800 selection:text-white">
+<div class="fixed top-0 inset-x-0 z-30 w-full px-4 pt-4 pointer-events-none">
+<header class="pointer-events-auto relative mx-auto max-w-[700px] h-[52px] rounded-full border border-white/10 bg-white/[0.045] backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.6)] px-3 pl-4 flex items-center justify-between overflow-hidden">
+<div aria-hidden="true" class="pointer-events-none absolute -top-12 left-16 w-28 h-28 rounded-full bg-gradient-to-br from-[#5b8def]/40 to-transparent blur-2xl"></div>
+<div aria-hidden="true" class="pointer-events-none absolute -bottom-14 right-24 w-32 h-32 rounded-full bg-gradient-to-br from-[#8b5cf6]/30 to-transparent blur-2xl"></div>
+<a class="relative z-10 flex items-center gap-2.5 group" href="{{ url_for('index') }}">
+<span class="mascot-float relative inline-flex">
+<span aria-hidden="true" class="absolute inset-0 rounded-full blur-md opacity-70 bg-gradient-to-br from-[#5b8def] to-[#8b5cf6] group-hover:opacity-100 transition-opacity"></span>
+<span aria-hidden="true" class="mascot relative inline-flex shrink-0 items-center justify-center w-7 h-7 bg-gradient-to-br from-[#5b8def] to-[#8b5cf6] shadow-lg shadow-black/40">
+<span class="flex gap-[3px] translate-x-[2px] translate-y-[1.5px]">
+<span class="mascot-eye block w-[2.5px] h-[7px] rounded-[3px] bg-[#050505]"></span>
+<span class="mascot-eye block w-[2.5px] h-[7px] rounded-[3px] bg-[#050505]"></span>
+</span>
+</span>
+</span>
+<span class="text-[14px] font-semibold tracking-tight text-[#F2F2F2] group-hover:text-white transition-colors">LLM Memory Estimator</span>
+</a>
+<nav aria-label="Navigation secondaire" class="relative z-10 flex items-center gap-2 text-[13px] text-app-textMuted font-normal">
+<a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/10 hover:text-app-textPrimary hover:border-white/20 transition-colors" href="{{ url_for('historique') }}">
+<svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3.5 2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+Historique
+</a>
 </nav>
 </header>
-<main class="relative flex-1 w-full max-w-[1600px] mx-auto px-6 sm:px-10 lg:px-16 pt-8 pb-16 flex items-center overflow-hidden">
-<div class="hidden lg:block absolute right-[-40px] top-1/2 -translate-y-1/2 w-[42%] max-w-[620px] pointer-events-none select-none z-0 opacity-70">
-<svg viewBox="0 0 400 400" class="w-full h-auto">
-<defs>
-<radialGradient id="g1" cx="35%" cy="30%" r="65%">
-<stop offset="0%" stop-color="#94a3b8" stop-opacity="0.6"></stop>
-<stop offset="40%" stop-color="#3f3f46" stop-opacity="0.5"></stop>
-<stop offset="100%" stop-color="#050505" stop-opacity="0"></stop>
-</radialGradient>
-<radialGradient id="g2" cx="30%" cy="30%" r="70%">
-<stop offset="0%" stop-color="#71717a" stop-opacity="0.6"></stop>
-<stop offset="45%" stop-color="#27272a" stop-opacity="0.5"></stop>
-<stop offset="100%" stop-color="#050505" stop-opacity="0"></stop>
-</radialGradient>
-</defs>
-<circle cx="290" cy="150" r="90" fill="url(#g1)"></circle>
-<circle cx="180" cy="260" r="70" fill="url(#g2)"></circle>
-<circle cx="310" cy="290" r="55" fill="url(#g1)"></circle>
-<line x1="290" y1="150" x2="180" y2="260" stroke="#3f3f46" stroke-width="14" stroke-linecap="round" opacity="0.4"></line>
-<line x1="180" y1="260" x2="310" y2="290" stroke="#3f3f46" stroke-width="14" stroke-linecap="round" opacity="0.4"></line>
-</svg>
 </div>
-<div class="relative z-10 w-full lg:w-[480px] lg:ml-[10%] xl:ml-[14%] flex flex-col">
-<span class="text-[10px] uppercase font-mono tracking-[3px] text-app-textMuted mb-2 block select-none">LLM Memory Analysis</span>
-<h1 class="text-[42px] sm:text-[46px] font-medium leading-[1.05] tracking-[-0.03em] text-app-textPrimary mb-3">Estimez la mémoire<br>de votre modèle LLM</h1>
-<p class="text-[13.5px] text-app-textMuted leading-relaxed max-w-[430px] mb-8 font-normal">Configurez votre modèle et votre environnement pour estimer les ressources mémoire nécessaires avant le déploiement.</p>
-<section class="w-full bg-app-surface border border-white/10 rounded-md p-6 shadow-2xl">
-<div class="flex items-center justify-between pb-4 border-b border-app-border text-[11px] font-mono mb-5">
-<span class="uppercase tracking-widest text-[#E1E1E1] font-medium">Configuration</span>
-<span class="text-app-textMuted font-sans text-xs">Paramètres d'inférence</span>
+<main class="relative flex-1 w-full px-6 pt-24 pb-16 flex items-center justify-center">
+<div class="fixed inset-0 overflow-hidden pointer-events-none select-none z-0">
+<div class="absolute -top-32 right-[-10%] w-[780px] h-[780px] rounded-full" style="background:#4f6bed; opacity:0.28; filter: blur(130px);"></div>
+<div class="absolute top-[22%] right-[-4%] w-[620px] h-[620px] rounded-full" style="background:#8b5cf6; opacity:0.18; filter: blur(120px);"></div>
+<div class="absolute bottom-[-12%] right-[8%] w-[560px] h-[560px] rounded-full" style="background:#22d3ee; opacity:0.16; filter: blur(110px);"></div>
+<div class="absolute inset-0" style="background-image:url('{{ url_for('static', filename='img/grain.svg') }}'); background-size: 220px 220px; opacity:0.05; mix-blend-mode: overlay;"></div>
+<div class="hidden lg:block absolute top-[30%] right-[7%]" id="orb-compagnon" aria-hidden="true">
+<span class="mascot inline-flex items-center justify-center w-36 h-36 bg-gradient-to-br from-[#5b8def] to-[#8b5cf6] shadow-2xl shadow-black/50">
+<span class="flex gap-3.5" id="orb-yeux">
+<span class="mascot-eye block w-[11px] h-7 rounded-[7px] bg-[#050505]" style="animation-duration: 4.2s;"></span>
+<span class="mascot-eye block w-[11px] h-7 rounded-[7px] bg-[#050505]" style="animation-duration: 4.2s;"></span>
+</span>
+</span>
 </div>
-<form class="space-y-4" method="get" action="{{ url_for('dashboard') }}">
-<div>
-<label class="block text-[11px] font-mono uppercase tracking-wider text-app-textMuted mb-1.5" for="model-select">Modèle</label>
+</div>
+<div class="relative z-10 w-full max-w-[820px] flex flex-col items-center text-center">
+<span class="text-[10px] uppercase font-mono tracking-[3px] text-app-textMuted mb-3 block select-none">LLM Memory Analysis</span>
+<h1 class="text-[38px] sm:text-[44px] font-medium leading-[1.1] tracking-[-0.03em] text-white mb-3">Estimez la mémoire de votre modèle LLM</h1>
+<p class="text-[13px] text-app-textSubtle leading-relaxed max-w-[420px] mb-8 font-normal">Quel modèle, quelle précision, quel matériel : obtenez une estimation immédiate.</p>
+{% if erreur %}
+<div class="mb-4 w-full px-3.5 py-3 rounded-xl bg-red-950/40 border border-red-800/60 text-[12.5px] text-red-300 leading-relaxed text-left">{{ erreur }}</div>
+{% endif %}
+<form class="w-full flex flex-col items-center" method="get" action="{{ url_for('dashboard') }}">
+<div class="chatbar metal-ring group relative z-20 w-full max-w-[700px] rounded-[24px] p-4 bg-neutral-900 transition-[max-width,padding] duration-500 ease-[cubic-bezier(.22,1,.36,1)]" id="chatbar" style="max-width:700px">
+<div aria-hidden="true" class="pointer-events-none absolute inset-0 rounded-[26px] opacity-[0.05] mix-blend-overlay" style="background-image:url('{{ url_for('static', filename='img/grain.svg') }}'); background-size: 220px 220px;"></div>
 <div class="relative">
-<select class="w-full h-[42px] bg-app-input border border-app-border rounded text-[13.5px] text-app-textPrimary px-3.5 pr-8 appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer" id="model-select" name="modele">
-{% for m in modeles %}
-<option value="{{ m.hf_id }}"{% if loop.first %} selected{% endif %}>{{ m.name }}</option>
-{% endfor %}
-</select>
-<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500">
-<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+<input autocomplete="off" class="w-full bg-transparent text-center text-[16.5px] text-white placeholder-white/30 px-3 py-3.5 outline-none focus:outline-none focus-visible:outline-none border-0 focus:ring-0 focus:shadow-none transition-[padding] duration-500 ease-[cubic-bezier(.22,1,.36,1)]" id="model-search" placeholder="Rechercher un modèle (Llama, Mistral, Gemma...)" style="outline:none; box-shadow:none;" type="text">
+<div class="hidden absolute z-20 mt-1 w-full bg-[#0a0a0c]/95 backdrop-blur-xl backdrop-saturate-150 border border-white/10 rounded-2xl shadow-xl max-h-64 overflow-y-auto text-left" id="model-suggestions"></div>
 </div>
-</div>
-<input class="w-full h-[38px] mt-2 bg-app-input border border-app-border rounded text-[12.5px] text-app-textPrimary px-3.5 placeholder-app-textSubtle focus:outline-none focus:border-neutral-500 transition-colors" name="modele_custom" placeholder="Ou : org/nom-du-modèle (Hugging Face)" type="text">
-</div>
-<div>
-<label class="block text-[11px] font-mono uppercase tracking-wider text-app-textMuted mb-1.5" for="precision-select">Précision</label>
+<input id="model-id" name="modele" type="hidden">
+<div class="relative flex items-center justify-between gap-2 mt-1 px-1">
+<div class="flex items-center gap-2">
 <div class="relative">
-<select class="w-full h-[42px] bg-app-input border border-app-border rounded text-[13.5px] text-app-textPrimary px-3.5 pr-8 appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer" id="precision-select" name="precision">
-{% for p in precisions %}
-<option value="{{ p }}"{% if p == 'FP16' %} selected{% endif %}>{{ p }}</option>
+<button aria-label="Familles de modèles" class="grid h-9 w-9 place-items-center rounded-full bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors" id="familles-toggle-btn" type="button">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><line x1="12" x2="12" y1="5" y2="19" stroke-linecap="round"></line><line x1="5" x2="19" y1="12" y2="12" stroke-linecap="round"></line></svg>
+</button>
+<div class="hidden absolute z-30 bottom-full mb-2 left-0 w-64 bg-[#0b0c0e]/95 backdrop-blur-xl backdrop-saturate-150 border border-white/10 rounded-2xl shadow-2xl p-3" id="familles-popover">
+<div class="mb-2.5 text-[10px] uppercase font-mono tracking-wider text-white/40">Modèles connus</div>
+<div class="grid grid-cols-5 gap-1">
+{% for f in familles %}
+<button class="famille-btn group relative flex flex-col items-center justify-center gap-1.5 rounded-xl py-2 hover:bg-white/5 transition-colors" data-recherche="{{ f.recherche }}" type="button">
+{% if f.logo %}<img alt="{{ f.nom }}" class="w-7 h-7 rounded-full object-cover ring-1 ring-white/10 group-hover:ring-white/25 transition-all" src="{{ f.logo }}">{% else %}<span class="w-7 h-7 rounded-full bg-neutral-700"></span>{% endif %}
+<span class="text-[10px] text-white/45 group-hover:text-white/85 transition-colors">{{ f.nom }}</span>
+</button>
 {% endfor %}
-</select>
-<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500">
-<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
 </div>
-</div>
-</div>
-<div class="pt-1 pb-1">
-<div class="flex justify-between items-center mb-2">
-<label class="text-[11px] font-mono uppercase tracking-wider text-app-textMuted" for="context-slider">Longueur de Contexte</label>
-<span class="px-2 py-0.5 rounded bg-app-input border border-app-border text-[11px] font-mono text-app-textPrimary" id="context-label">8K TOKENS</span>
-</div>
-<input aria-label="Sélectionner la longueur du contexte mémoire" class="w-full cursor-pointer" id="context-slider" max="4" min="0" step="1" type="range" value="2">
-<input type="hidden" name="contexte" id="context-value" value="8192">
-<div class="flex justify-between text-[10px] font-mono text-app-textSubtle mt-1 px-0.5">
-<span>2K</span><span>4K</span><span class="text-app-textPrimary font-medium">8K</span><span>16K</span><span>32K</span>
-</div>
-</div>
-<div class="pt-1">
-<label class="block text-[11px] font-mono uppercase tracking-wider text-app-textMuted mb-1.5" for="gpu-select">Plateforme Cible</label>
-<div class="relative">
-<select class="w-full h-[42px] bg-app-input border border-app-border rounded text-[13.5px] text-app-textPrimary px-3.5 pr-8 appearance-none focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer" id="gpu-select" name="plateforme">
-{% for p in plateformes %}
-<option value="{{ p.name }}" data-embarque="{{ 'oui' if p.unified_memory else 'non' }}"{% if loop.first %} selected{% endif %}>{{ p.name }} ({{ p.memory_gb }} GB)</option>
-{% endfor %}
-</select>
-<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-neutral-500">
-<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
-</div>
-</div>
-<div class="mt-2 grid grid-cols-2 gap-2">
-<input class="col-span-2 h-[36px] bg-app-input border border-app-border rounded text-[12px] text-app-textPrimary px-3 placeholder-app-textSubtle focus:outline-none focus:border-neutral-500 transition-colors" id="plateforme-custom-nom" name="plateforme_custom_nom" placeholder="Ou : plateforme personnalisée (nom)" type="text">
-<input class="h-[36px] bg-app-input border border-app-border rounded text-[12px] text-app-textPrimary px-3 placeholder-app-textSubtle focus:outline-none focus:border-neutral-500 transition-colors" name="plateforme_custom_mem" placeholder="Mémoire (GB)" type="text">
-<input class="h-[36px] bg-app-input border border-app-border rounded text-[12px] text-app-textPrimary px-3 placeholder-app-textSubtle focus:outline-none focus:border-neutral-500 transition-colors" name="plateforme_custom_watts" placeholder="Puissance (W)" type="text">
-<label class="col-span-2 flex items-center gap-2 text-[11px] text-app-textMuted mt-0.5">
+<div class="mt-3 pt-3 border-t border-white/10">
+<button class="w-full flex items-center justify-center gap-1.5 h-9 rounded-xl border border-dashed border-white/15 text-[11.5px] text-white/50 hover:text-white hover:border-white/30 transition-colors" id="ajouter-plateforme-btn" type="button">
+<svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"></path></svg>
+Ajouter votre matériel
+</button>
+<div class="hidden mt-2 grid grid-cols-2 gap-2" id="plateforme-custom-fields">
+<input class="col-span-2 h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12px] text-white px-3 placeholder-white/30 focus:outline-none focus:border-neutral-500 transition-colors" id="plateforme-custom-nom" name="plateforme_custom_nom" placeholder="Nom de la plateforme" type="text">
+<input class="h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12px] text-white px-3 placeholder-white/30 focus:outline-none focus:border-neutral-500 transition-colors" name="plateforme_custom_mem" placeholder="Mémoire (GB)" type="text">
+<input class="h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12px] text-white px-3 placeholder-white/30 focus:outline-none focus:border-neutral-500 transition-colors" name="plateforme_custom_watts" placeholder="Puissance (W)" type="text">
+<label class="col-span-2 flex items-center gap-2 text-[11px] text-white/50 mt-0.5">
 <input id="plateforme-custom-embarque" name="plateforme_custom_embarque" type="checkbox" value="oui">
 Carte embarquée, sur batterie
 </label>
 </div>
+<div class="pt-2" id="batterie-field" style="display:none">
+<label class="block text-[10px] uppercase font-mono tracking-wider text-white/40 mb-1.5" for="batterie-input">Capacité Batterie (mAh)</label>
+<input class="w-full h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12.5px] text-white px-3 placeholder-white/30 focus:outline-none focus:border-neutral-500 transition-colors" id="batterie-input" name="batterie_mah" placeholder="ex: 5000" type="text">
 </div>
-<div class="pt-1" id="batterie-field" style="display:none">
-<label class="block text-[11px] font-mono uppercase tracking-wider text-app-textMuted mb-1.5" for="batterie-input">Capacité Batterie (Wh)</label>
-<input class="w-full h-[42px] bg-app-input border border-app-border rounded text-[13.5px] text-app-textPrimary px-3.5 placeholder-app-textSubtle focus:outline-none focus:border-neutral-500 transition-colors" id="batterie-input" name="batterie_wh" placeholder="ex: 100" type="text">
+</div>
+</div>
+</div>
+<div class="relative">
+<button class="inline-flex items-center gap-1.5 h-9 pl-3 pr-2.5 rounded-full bg-white/5 hover:bg-white/10 text-[13px] font-medium text-white/85 hover:text-white transition-colors" id="contexte-dropdown-btn" type="button">
+<svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect height="6" rx="1.5" width="18" x="3" y="3"></rect><rect height="6" rx="1.5" width="18" x="3" y="15"></rect></svg>
+<span class="text-white/40 font-normal">Contexte</span>
+<span id="contexte-dropdown-label">8K</span>
+<svg class="h-3 w-3 text-white/50 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<div class="hidden absolute z-30 top-full mt-2 left-0 w-52 bg-[#0b0c0e]/95 backdrop-blur-xl backdrop-saturate-150 border border-white/10 rounded-2xl shadow-2xl p-3" id="contexte-dropdown-list">
+<div class="flex items-center justify-between mb-2.5">
+<span class="text-[10px] uppercase font-mono tracking-wider text-white/40">Contexte</span>
+<span class="text-[11px] font-semibold text-white" id="contexte-slider-label">8K tokens</span>
+</div>
+<div class="relative h-[30px]" id="contexte-slider" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="4" aria-label="Longueur de contexte">
+<div class="absolute left-0 right-0 top-1/2 h-[18px] -translate-y-1/2 rounded-full bg-white/10 overflow-hidden" id="contexte-track">
+<div class="absolute inset-0 pointer-events-none" id="contexte-ticks"></div>
+<div class="absolute inset-y-0 left-0 rounded-full overflow-hidden" id="contexte-fill" style="width:50%; background:#3b82f6;">
+<div class="absolute inset-0 opacity-0 transition-opacity duration-300" id="contexte-fill-ultra" style="background:linear-gradient(90deg,#2E61D4 0%,#A57BFD 65%,#8B73F3 100%);"></div>
+<canvas class="absolute inset-0 w-full h-full" id="contexte-sparkles"></canvas>
+</div>
+</div>
+<div class="absolute top-1/2 h-[22px] w-[22px] rounded-full bg-white -translate-y-1/2 -translate-x-1/2 cursor-grab active:cursor-grabbing" id="contexte-knob" style="left:50%; box-shadow:0 1px 2px rgba(0,0,0,.35), 0 2px 6px rgba(0,0,0,.3);"></div>
+<canvas class="absolute pointer-events-none" id="contexte-confetti" style="left:-32px; top:-40px;"></canvas>
+</div>
+<div class="flex justify-between mt-1.5 px-0.5">
+{% for c in contextes %}
+<button class="contexte-option text-[10.5px] font-mono text-white/35 hover:text-white/70 transition-colors" data-contexte="{{ c }}" type="button">{{ c // 1024 }}K</button>
+{% endfor %}
+</div>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="relative">
+<button class="precision-btn inline-flex items-center gap-1.5 h-9 pl-3 pr-2.5 rounded-full bg-white/5 hover:bg-white/10 text-[13px] font-medium text-white/85 hover:text-white transition-colors" id="precision-dropdown-btn" type="button">
+<svg class="h-3.5 w-3.5 shrink-0" id="precision-icone" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"></svg>
+<span class="text-white/40 font-normal">Précision</span>
+<span id="precision-dropdown-label">Élevé</span>
+<svg class="h-3 w-3 text-white/50 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<div class="hidden absolute z-30 top-full mt-2 right-0 w-72 bg-[#0b0c0e]/95 backdrop-blur-xl backdrop-saturate-150 border border-white/10 rounded-2xl shadow-2xl p-1.5" id="precision-dropdown-list">
+{% for niveau in niveaux_precision %}
+<button class="precision-option group/opt relative flex w-full items-start gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-white/5 transition-colors" data-precision="{{ niveau.precision }}" type="button">
+<span class="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/5 text-white/70 group-hover/opt:text-white">
+<svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">{{ niveau.icone|safe }}</svg>
+</span>
+<span class="min-w-0 flex-1">
+<span class="flex items-center gap-1.5">
+<span class="text-[12.5px] font-semibold text-white">{{ niveau.nom }}</span>
+<span class="text-[10.5px] font-mono text-white/40">{{ niveau.precision }}</span>
+<svg class="precision-check h-3 w-3 text-blue-400 ml-auto hidden" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+</span>
+<span class="mt-0.5 block text-[11px] leading-snug text-white/45">{{ niveau.blurb }}</span>
+</span>
+</button>
+{% endfor %}
+</div>
+</div>
+<div class="relative grid h-8 w-8 place-items-center shrink-0">
+<canvas aria-hidden="true" class="absolute inset-0 w-full h-full pointer-events-none" id="arrow-metal-glow" style="filter: blur(3px) brightness(0.75) saturate(0.4) opacity(0.55); transform: scale(1.04);"></canvas>
+<button aria-label="Calculer l'estimation" class="relative grid h-9 w-9 place-items-center rounded-full text-white transition-all active:scale-90" id="chatbar-submit" style="background:#272727" type="button">
+<svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" x2="12" y1="19" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+</button>
+<canvas aria-hidden="true" class="absolute inset-0 w-full h-full rounded-full pointer-events-none" id="arrow-metal-canvas" style="filter: brightness(0.95) saturate(1.1);"></canvas>
+</div>
+</div>
+</div>
+<input id="precision-value" name="precision" type="hidden" value="FP16">
+<input id="context-value" name="contexte" type="hidden" value="8192">
+</div>
+<div class="flex flex-wrap justify-center gap-2 mt-4">
+{% for t in taches %}
+<button class="tache-btn inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/10 bg-white/[0.03] text-[12.5px] text-app-textMuted hover:text-white hover:border-white/20 hover:bg-white/[0.07] transition-colors" data-active="false" data-tache="{{ t.valeur }}" type="button">
+<svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="{{ t.couleur }}" stroke-width="2" viewBox="0 0 24 24">{{ icone_tache(t.icone) }}</svg>
+{{ t.nom }}
+</button>
+{% endfor %}
+</div>
+<div class="w-full max-w-[700px] text-left mt-7 space-y-4">
+<div class="pt-1">
+<label class="flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-wider text-app-textMuted mb-1.5" for="plateforme-dropdown-btn">Plateforme Cible</label>
+<div class="relative" id="plateforme-wrap">
+<button class="w-full h-[42px] bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[13.5px] text-app-textPrimary px-3 flex items-center gap-2.5 focus:outline-none focus:border-neutral-500 transition-colors cursor-pointer" id="plateforme-dropdown-btn" type="button">
+<img alt="" class="w-6 h-6 object-contain rounded-sm bg-[#0b101b] shrink-0 hidden" id="plateforme-dropdown-img">
+<span class="flex-1 truncate text-left text-app-textMuted" id="plateforme-dropdown-label">Choisir une plateforme</span>
+<svg class="h-3.5 w-3.5 text-neutral-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button><div class="absolute z-20 w-full bg-[#0b0c0e]/95 backdrop-blur-xl backdrop-saturate-150 border border-white/10 rounded-2xl shadow-2xl max-h-72 overflow-y-auto p-1.5 origin-top opacity-0 scale-95 -translate-y-1 pointer-events-none transition-[opacity,transform] duration-200 ease-out" id="plateforme-dropdown-list">
+<div class="px-2 pt-1.5 pb-1 text-[10px] uppercase font-mono tracking-wider text-white/40">GPU datacenter</div>
+{% for p in plateformes if not p.unified_memory %}
+<button class="plateforme-option group/opt relative w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-left hover:bg-white/[0.06] transition-colors" data-embarque="non" data-image="{{ url_for('static', filename='img/hf/' + p.image) }}" data-label="{{ p.name }} ({{ p.memory_gb }} GB)" data-name="{{ p.name }}" type="button">
+<span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/[0.06] ring-1 ring-white/10 group-hover/opt:ring-white/20 transition-all overflow-hidden">
+<img alt="" class="w-6 h-6 object-contain" src="{{ url_for('static', filename='img/hf/' + p.image) }}">
+</span>
+<span class="flex-1 min-w-0">
+<span class="block truncate text-[13px] text-white">{{ p.name.rsplit(' ', 1)[0] }}</span>
+<span class="block text-[10.5px] text-white/40">{{ p.memory_type }} · {{ p.power_watts|int }} W</span>
+</span>
+<span class="text-[11px] font-mono text-white/45 shrink-0">{{ p.memory_gb|int }} GB</span>
+<svg class="plateforme-check h-3.5 w-3.5 text-blue-400 shrink-0 hidden" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+</button>
+{% endfor %}
+<div class="px-2 pt-2.5 pb-1 text-[10px] uppercase font-mono tracking-wider text-white/40 border-t border-white/10 mt-1">Cartes embarquées</div>
+{% for p in plateformes if p.unified_memory %}
+<button class="plateforme-option group/opt relative w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-left hover:bg-white/[0.06] transition-colors" data-embarque="oui" data-image="{{ url_for('static', filename='img/hf/' + p.image) }}" data-label="{{ p.name }} ({{ p.memory_gb }} GB)" data-name="{{ p.name }}" type="button">
+<span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/[0.06] ring-1 ring-white/10 group-hover/opt:ring-white/20 transition-all overflow-hidden">
+<img alt="" class="w-6 h-6 object-contain" src="{{ url_for('static', filename='img/hf/' + p.image) }}">
+</span>
+<span class="flex-1 min-w-0">
+<span class="block truncate text-[13px] text-white">{{ p.name.rsplit(' ', 1)[0] }}</span>
+<span class="block text-[10.5px] text-white/40">{{ p.memory_type }} · {{ p.power_watts|int }} W</span>
+</span>
+<span class="text-[11px] font-mono text-white/45 shrink-0">{{ p.memory_gb|int }} GB</span>
+<svg class="plateforme-check h-3.5 w-3.5 text-blue-400 shrink-0 hidden" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+</button>
+{% endfor %}
+</div>
+<input id="plateforme-value" name="plateforme" type="hidden" value="" data-embarque="">
+</div>
+<div class="hidden mt-2.5" id="batterie-question">
+<div class="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10">
+<span class="text-[12.5px] text-app-textMuted">Alimentée par batterie ?</span>
+<div class="inline-flex items-center rounded-full bg-white/5 p-0.5 gap-0.5" id="batterie-toggle">
+<button class="batterie-toggle-opt px-3 h-6 text-[11px] font-medium rounded-full transition-colors" data-valeur="non" type="button">Non</button>
+<button class="batterie-toggle-opt px-3 h-6 text-[11px] font-medium rounded-full transition-colors" data-valeur="oui" type="button">Oui</button>
+</div>
+</div>
+<div class="hidden mt-2" id="batterie-builtin-field">
+<label class="block text-[10px] uppercase font-mono tracking-wider text-app-textMuted mb-1.5" for="batterie-builtin-input">Capacité Batterie (mAh)</label>
+<input class="w-full h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12.5px] text-app-textPrimary px-3 placeholder-white/30 focus:outline-none focus:border-neutral-500 transition-colors" id="batterie-builtin-input" name="batterie_mah" placeholder="ex: 5000" type="text">
+</div>
+</div>
 </div>
 <div class="pt-3">
-<button class="w-full h-[46px] bg-[#F2F2F2] hover:bg-white text-[#050505] font-medium text-[13.5px] rounded-md transition-all duration-150 flex items-center justify-center gap-2 active:scale-[0.99] focus:outline-none" type="submit">
+<button class="metal-ring w-full h-[46px] text-white font-medium text-[13.5px] rounded-2xl shadow-lg shadow-black/40 transition-all duration-200 flex items-center justify-center gap-2 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.97] focus:outline-none" type="submit">
 <span>Calculer l'estimation</span>
 <span class="text-sm">→</span>
 </button>
@@ -165,40 +329,997 @@ Carte embarquée, sur batterie
 <div class="text-center pt-2">
 <a class="text-[12px] text-neutral-500 hover:text-app-textMuted transition-colors inline-block" href="{{ url_for('historique') }}">Historique des estimations →</a>
 </div>
+</div>
 </form>
-</section>
 </div>
 </main>
-<footer class="w-full border-t border-app-border bg-[#050505] px-6 py-3 flex flex-col sm:flex-row items-center justify-between text-[11px] font-mono text-app-textSubtle gap-2 z-20">
-<div class="flex items-center space-x-2">
-<span class="inline-block w-1.5 h-1.5 rounded-full bg-neutral-400"></span>
-<span>Calcul déterministe</span>
-<span class="mx-1">•</span>
-<span>Architecture Attention / MLP</span>
-</div>
-<div><span>LLM Memory Estimator</span><span class="mx-1">•</span><span>v1.0.0</span></div>
-</footer>
 <script>
-  const contextes = [2048, 4096, 8192, 16384, 32768];
-  const labels = ["2K", "4K", "8K", "16K", "32K"];
-  const slider = document.getElementById('context-slider');
-  const label = document.getElementById('context-label');
-  const hidden = document.getElementById('context-value');
-  slider.addEventListener('input', () => {
-    const i = parseInt(slider.value, 10);
-    hidden.value = contextes[i];
-    label.textContent = labels[i] + " TOKENS";
-  });
-
-  const gpuSelect = document.getElementById('gpu-select');
+  const plateformeValue = document.getElementById('plateforme-value');
+  const plateformeBtn = document.getElementById('plateforme-dropdown-btn');
+  const plateformeList = document.getElementById('plateforme-dropdown-list');
+  const plateformeImg = document.getElementById('plateforme-dropdown-img');
+  const plateformeLabel = document.getElementById('plateforme-dropdown-label');
   const batterieField = document.getElementById('batterie-field');
   const embarqueCustom = document.getElementById('plateforme-custom-embarque');
+  const batterieQuestion = document.getElementById('batterie-question');
+  const batterieBuiltinField = document.getElementById('batterie-builtin-field');
+  const batterieToggleOpts = Array.from(document.querySelectorAll('.batterie-toggle-opt'));
+  let batterieAlimentee = 'non';
+
   function majBatterieField() {
-    const option = gpuSelect.options[gpuSelect.selectedIndex];
-    batterieField.style.display = (option.dataset.embarque === 'oui' || embarqueCustom.checked) ? 'block' : 'none';
+    batterieField.style.display = embarqueCustom.checked ? 'block' : 'none';
   }
-  gpuSelect.addEventListener('change', majBatterieField);
+
+  function majBatterieToggleStyle() {
+    batterieToggleOpts.forEach(o => {
+      const actif = o.dataset.valeur === batterieAlimentee;
+      o.classList.toggle('bg-white/15', actif);
+      o.classList.toggle('text-white', actif);
+      o.classList.toggle('text-app-textMuted', !actif);
+    });
+  }
+
+  function majBatterieQuestion() {
+    const embarque = plateformeValue.dataset.embarque === 'oui';
+    batterieQuestion.classList.toggle('hidden', !embarque);
+    if (!embarque) {
+      batterieAlimentee = 'non';
+      batterieBuiltinField.classList.add('hidden');
+    }
+    majBatterieToggleStyle();
+  }
+
+  batterieToggleOpts.forEach(btn => {
+    btn.addEventListener('click', () => {
+      batterieAlimentee = btn.dataset.valeur;
+      majBatterieToggleStyle();
+      batterieBuiltinField.classList.toggle('hidden', batterieAlimentee !== 'oui');
+    });
+  });
+  majBatterieToggleStyle();
+
+  function positionnerListe(bouton, liste) {
+    const espaceBas = window.innerHeight - bouton.getBoundingClientRect().bottom;
+    liste.classList.remove('top-full', 'mt-1', 'mt-2', 'bottom-full', 'mb-1', 'mb-2');
+    if (espaceBas < 240) {
+      liste.classList.add('bottom-full', 'mb-1');
+    } else {
+      liste.classList.add('top-full', 'mt-1');
+    }
+  }
+
+
+  const PLATEFORME_LISTE_FERMEE = ['opacity-0', 'scale-95', '-translate-y-1', 'pointer-events-none'];
+  const PLATEFORME_LISTE_OUVERTE = ['opacity-100', 'scale-100', 'translate-y-0', 'pointer-events-auto'];
+
+  function plateformeListeOuverte() {
+    return plateformeList.classList.contains('opacity-100');
+  }
+  function ouvrirListePlateforme() {
+    positionnerListe(plateformeBtn, plateformeList);
+    plateformeList.classList.remove(...PLATEFORME_LISTE_FERMEE);
+    plateformeList.classList.add(...PLATEFORME_LISTE_OUVERTE);
+  }
+  function fermerListePlateforme() {
+    plateformeList.classList.remove(...PLATEFORME_LISTE_OUVERTE);
+    plateformeList.classList.add(...PLATEFORME_LISTE_FERMEE);
+  }
+
+  plateformeBtn.addEventListener('click', () => {
+    if (plateformeListeOuverte()) fermerListePlateforme(); else ouvrirListePlateforme();
+  });
+  const plateformeOptions = Array.from(document.querySelectorAll('.plateforme-option'));
+  plateformeOptions.forEach(btn => {
+    btn.addEventListener('click', () => {
+      plateformeValue.value = btn.dataset.name;
+      plateformeValue.dataset.embarque = btn.dataset.embarque;
+      plateformeImg.src = btn.dataset.image;
+      plateformeLabel.textContent = btn.dataset.label;
+      fermerListePlateforme();
+      plateformeOptions.forEach(o => o.querySelector('.plateforme-check').classList.add('hidden'));
+      btn.querySelector('.plateforme-check').classList.remove('hidden');
+      plateformeImg.classList.remove('hidden');
+      plateformeLabel.classList.remove('text-app-textMuted');
+      majBatterieField();
+      majBatterieQuestion();
+    });
+  });
+  document.addEventListener('click', (e) => {
+    if (!plateformeBtn.contains(e.target) && !plateformeList.contains(e.target)) {
+      fermerListePlateforme();
+    }
+  });
   embarqueCustom.addEventListener('change', majBatterieField);
   majBatterieField();
+  majBatterieQuestion();
+
+  document.getElementById('ajouter-plateforme-btn').addEventListener('click', function () {
+    document.getElementById('plateforme-custom-fields').classList.toggle('hidden');
+  });
+
+  // sélecteur de précision (Faible/Standard/Élevé/Maximale) dans la barre de recherche
+  const precisionBtn = document.getElementById('precision-dropdown-btn');
+  const precisionList = document.getElementById('precision-dropdown-list');
+  const precisionValue = document.getElementById('precision-value');
+  const precisionIcone = document.getElementById('precision-icone');
+  const precisionLabel = document.getElementById('precision-dropdown-label');
+  const precisionOptions = Array.from(document.querySelectorAll('.precision-option'));
+
+  function choisirPrecision(opt) {
+    precisionValue.value = opt.dataset.precision;
+    precisionLabel.textContent = opt.querySelector('.text-white').textContent;
+    precisionIcone.innerHTML = opt.querySelector('svg').innerHTML;
+    precisionOptions.forEach(o => o.querySelector('.precision-check').classList.add('hidden'));
+    opt.querySelector('.precision-check').classList.remove('hidden');
+  }
+
+  precisionBtn.addEventListener('click', () => {
+    precisionList.classList.toggle('hidden');
+  });
+  precisionOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      choisirPrecision(opt);
+      precisionList.classList.add('hidden');
+    });
+  });
+  document.addEventListener('click', (e) => {
+    if (!precisionBtn.contains(e.target) && !precisionList.contains(e.target)) {
+      precisionList.classList.add('hidden');
+    }
+  });
+  // initialise l'icône/texte du bouton sur "Élevé" (FP16), sélectionné par défaut
+  choisirPrecision(precisionOptions.find(o => o.dataset.precision === 'FP16'));
+
+  // sélecteur de longueur de contexte, à gauche dans la barre : slider bleu -> mauve au niveau max,
+  // avec des particules qui défilent dans la barre et une petite salve au niveau "Ultra" (32K)
+  const contexteBtn = document.getElementById('contexte-dropdown-btn');
+  const contexteList = document.getElementById('contexte-dropdown-list');
+  const contexteValue = document.getElementById('context-value');
+  const contexteLabel = document.getElementById('contexte-dropdown-label');
+  const contexteSliderLabel = document.getElementById('contexte-slider-label');
+  const contexteOptions = Array.from(document.querySelectorAll('.contexte-option'));
+  const contexteSlider = document.getElementById('contexte-slider');
+  const contexteTrack = document.getElementById('contexte-track');
+  const contexteTicks = document.getElementById('contexte-ticks');
+  const contexteFill = document.getElementById('contexte-fill');
+  const contexteFillUltra = document.getElementById('contexte-fill-ultra');
+  const contexteKnob = document.getElementById('contexte-knob');
+  const contexteSparkCanvas = document.getElementById('contexte-sparkles');
+  const contexteConfettiCanvas = document.getElementById('contexte-confetti');
+  const paliersContexte = contexteOptions.map(o => Number(o.dataset.contexte));
+  const dernierIndex = paliersContexte.length - 1;
+  let indexContexte = paliersContexte.indexOf(8192);
+  let glisseContexte = false;
+  let sparkRaf = 0, sparkParticles = [], sparkLast = 0, sparkBox = null;
+  let confettiRaf = 0, confettiParts = [], confettiLast = 0, confettiBox = null;
+
+  for (let i = 0; i <= dernierIndex; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'tick';
+    contexteTicks.appendChild(dot);
+  }
+
+  function metriquesSlider() {
+    const w = contexteTrack.clientWidth;
+    const K = 22;
+    const min = K / 2;
+    const max = w - K / 2;
+    return { w, K, min, max, span: Math.max(1, max - min) };
+  }
+
+  function positionnerTicks() {
+    const { min, span } = metriquesSlider();
+    const dots = contexteTicks.children;
+    for (let i = 0; i < dots.length; i++) {
+      dots[i].style.left = (min + (i / dernierIndex) * span) + 'px';
+    }
+  }
+
+  function positionnerKnob(pos) {
+    const { min, span, K } = metriquesSlider();
+    const cx = min + pos * span;
+    contexteKnob.style.left = cx + 'px';
+    contexteFill.style.width = (cx + K / 2) + 'px';
+  }
+
+  function appliquerContexte(animer) {
+    contexteSlider.classList.toggle('is-snapping', animer);
+    positionnerKnob(indexContexte / dernierIndex);
+    const estUltra = indexContexte === dernierIndex;
+    contexteFillUltra.style.opacity = estUltra ? '1' : '0';
+    const valeur = paliersContexte[indexContexte];
+    contexteValue.value = valeur;
+    const libelle = Math.round(valeur / 1024) + 'K';
+    contexteLabel.textContent = libelle;
+    contexteSliderLabel.textContent = libelle + ' tokens';
+    if (animer) {
+      clearTimeout(appliquerContexte._t);
+      appliquerContexte._t = setTimeout(() => contexteSlider.classList.remove('is-snapping'), 420);
+      if (estUltra) declencherConfetti();
+    }
+  }
+
+  function indexDepuisPosition(clientX) {
+    const { min, span } = metriquesSlider();
+    const rect = contexteTrack.getBoundingClientRect();
+    const pos = Math.min(1, Math.max(0, ((clientX - rect.left) - min) / span));
+    return Math.round(pos * dernierIndex);
+  }
+
+  contexteSlider.addEventListener('pointerdown', (e) => {
+    glisseContexte = true;
+    contexteSlider.classList.add('is-dragging');
+    contexteSlider.classList.remove('is-snapping');
+    try { contexteSlider.setPointerCapture(e.pointerId); } catch (err) {}
+    const i = indexDepuisPosition(e.clientX);
+    if (i !== indexContexte) { indexContexte = i; appliquerContexte(false); }
+    e.preventDefault();
+  });
+  contexteSlider.addEventListener('pointermove', (e) => {
+    if (!glisseContexte) return;
+    const i = indexDepuisPosition(e.clientX);
+    if (i !== indexContexte) { indexContexte = i; appliquerContexte(false); }
+  });
+  function relacherContexte() {
+    if (!glisseContexte) return;
+    glisseContexte = false;
+    contexteSlider.classList.remove('is-dragging');
+    appliquerContexte(true);
+  }
+  contexteSlider.addEventListener('pointerup', relacherContexte);
+  contexteSlider.addEventListener('pointercancel', relacherContexte);
+  contexteSlider.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' && indexContexte < dernierIndex) { indexContexte++; appliquerContexte(true); }
+    if (e.key === 'ArrowLeft' && indexContexte > 0) { indexContexte--; appliquerContexte(true); }
+  });
+
+  contexteBtn.addEventListener('click', () => {
+    if (contexteList.classList.contains('hidden')) {
+      contexteList.classList.remove('hidden');
+      requestAnimationFrame(() => { positionnerTicks(); appliquerContexte(false); demarrerSparkles(); });
+    } else {
+      contexteList.classList.add('hidden');
+      arreterSparkles();
+    }
+  });
+  contexteOptions.forEach((opt, i) => {
+    opt.addEventListener('click', () => { indexContexte = i; appliquerContexte(true); });
+  });
+  document.addEventListener('click', (e) => {
+    if (!contexteBtn.contains(e.target) && !contexteList.contains(e.target) && !glisseContexte) {
+      contexteList.classList.add('hidden');
+      arreterSparkles();
+    }
+  });
+  window.addEventListener('resize', () => { if (!contexteList.classList.contains('hidden')) { positionnerTicks(); appliquerContexte(false); } });
+
+  // particules qui défilent dans le remplissage, comme un flux d'énergie
+  function dimensionnerCanvasSpark() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = contexteTrack.clientWidth, h = contexteTrack.clientHeight;
+    if (!w || !h) return;
+    if (sparkBox && sparkBox.w === w && sparkBox.h === h) return;
+    contexteSparkCanvas.width = w * dpr;
+    contexteSparkCanvas.height = h * dpr;
+    contexteSparkCanvas.style.width = w + 'px';
+    contexteSparkCanvas.style.height = h + 'px';
+    sparkBox = { w, h, dpr };
+    const n = Math.max(6, Math.round(w / 24));
+    sparkParticles = Array.from({ length: n }, () => ({
+      x: Math.random() * w, y: 4 + Math.random() * (h - 8),
+      r: 0.8 + Math.random() * 0.9, phase: Math.random() * Math.PI * 2,
+      twinkle: 2.5 + Math.random() * 4.5, flow: 85 + Math.random() * 50,
+    }));
+  }
+  function dessinerSparkles(t) {
+    if (!sparkBox) return;
+    const ctx = contexteSparkCanvas.getContext('2d');
+    const { w, h, dpr } = sparkBox;
+    const dt = Math.min(0.032, Math.max(0, (t - sparkLast) / 1000));
+    sparkLast = t;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#fff';
+    const sec = t / 1000;
+    for (const p of sparkParticles) {
+      p.x -= p.flow * dt;
+      if (p.x < -3) p.x += w + 6;
+      const s = 0.5 + 0.5 * Math.sin(sec * p.twinkle + p.phase);
+      ctx.globalAlpha = 0.06 + 0.74 * s * s;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    sparkRaf = requestAnimationFrame(dessinerSparkles);
+  }
+  function demarrerSparkles() {
+    dimensionnerCanvasSpark();
+    cancelAnimationFrame(sparkRaf);
+    sparkLast = performance.now();
+    sparkRaf = requestAnimationFrame(dessinerSparkles);
+  }
+  function arreterSparkles() {
+    cancelAnimationFrame(sparkRaf);
+    sparkRaf = 0;
+  }
+
+  // petite salve de particules quand on atteint le niveau max (32K, "Ultra")
+  function declencherConfetti() {
+    const sw = contexteSlider.offsetWidth, sh = contexteSlider.offsetHeight;
+    if (!sw) return;
+    const MX = 32, MY = 40;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const w = sw + MX * 2, h = sh + MY * 2;
+    if (!confettiBox || confettiBox.w !== w || confettiBox.h !== h) {
+      contexteConfettiCanvas.width = w * dpr;
+      contexteConfettiCanvas.height = h * dpr;
+      contexteConfettiCanvas.style.width = w + 'px';
+      contexteConfettiCanvas.style.height = h + 'px';
+      confettiBox = { w, h };
+    }
+    const cx = parseFloat(contexteKnob.style.left || sw / 2) + MX;
+    const cy = sh / 2 + MY;
+    const COULEURS = ['#C9B0F0', '#BFA5F2', '#D4C3F7', '#B79EF5'];
+    const R = 11, N = 14;
+    for (let i = 0; i < N; i++) {
+      const ang = (i / N) * Math.PI * 2 + (Math.random() - 0.5) * 0.35;
+      const sp = 105 + Math.random() * 45;
+      confettiParts.push({
+        x: cx + Math.cos(ang) * R, y: cy + Math.sin(ang) * R,
+        vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp - 25,
+        size: 4.5 + Math.random(), life: 0, ttl: 0.2 + Math.random() * 0.08,
+        color: COULEURS[i % COULEURS.length],
+      });
+    }
+    if (!confettiRaf) { confettiLast = performance.now(); confettiRaf = requestAnimationFrame(animerConfetti); }
+  }
+  function animerConfetti(t) {
+    const dt = Math.min(0.032, Math.max(0, (t - confettiLast) / 1000));
+    confettiLast = t;
+    if (!confettiBox) { confettiRaf = 0; return; }
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const ctx = contexteConfettiCanvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, confettiBox.w, confettiBox.h);
+    confettiParts = confettiParts.filter((p) => {
+      p.life += dt;
+      if (p.life >= p.ttl) return false;
+      const damp = Math.exp(-6 * dt);
+      p.vx *= damp;
+      p.vy = p.vy * damp - 20 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      const k = p.life / p.ttl;
+      ctx.globalAlpha = Math.pow(1 - k, 1.5);
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+      return true;
+    });
+    ctx.globalAlpha = 1;
+    if (confettiParts.length) confettiRaf = requestAnimationFrame(animerConfetti);
+    else { confettiRaf = 0; ctx.clearRect(0, 0, confettiBox.w, confettiBox.h); }
+  }
+
+  appliquerContexte(false);
+
+  // bouton "+" : révèle les familles de modèles au clic
+  const famillesBtn = document.getElementById('familles-toggle-btn');
+  const famillesPopover = document.getElementById('familles-popover');
+  famillesBtn.addEventListener('click', () => {
+    famillesPopover.classList.toggle('hidden');
+  });
+  document.addEventListener('click', (e) => {
+    if (!famillesBtn.contains(e.target) && !famillesPopover.contains(e.target)) {
+      famillesPopover.classList.add('hidden');
+    }
+  });
+
+  document.getElementById('chatbar-submit').addEventListener('click', (e) => {
+    // la soumission peut ouvrir la liste des plateformes (via un clic simulé sur
+    // son bouton) ; empêcher ce clic réel de remonter jusqu'au document, sinon
+    // le gestionnaire "clic en dehors" referme la liste juste après son ouverture
+    e.stopPropagation();
+    document.querySelector('form').requestSubmit();
+  });
+
+  // la barre s'élargit et s'agrandit doucement quand on commence à chercher
+  const chatbar = document.getElementById('chatbar');
+  document.getElementById('model-search').addEventListener('focus', () => {
+    chatbar.style.maxWidth = '820px';
+    chatbar.style.padding = '22px';
+  });
+  document.getElementById('model-search').addEventListener('blur', () => {
+    chatbar.style.maxWidth = '700px';
+    chatbar.style.padding = '16px';
+  });
+
+  // recherche de modèle en direct (API Hugging Face, pas la base locale de secours)
+  const modelSearch = document.getElementById('model-search');
+  const modelId = document.getElementById('model-id');
+  const modelSuggestions = document.getElementById('model-suggestions');
+  // aucune tâche active par défaut : une recherche sans tâche cochée cherche partout
+  const tacheBtns = Array.from(document.querySelectorAll('.tache-btn'));
+  let tacheActive = null;
+  let debounceTimer = null;
+  let rechercheAbort = null;
+
+  function desactiverTache(btn) {
+    btn.dataset.active = 'false';
+    btn.classList.remove('border-white/30', 'text-white', 'bg-white/10');
+    btn.classList.add('border-white/10', 'text-app-textMuted', 'bg-white/[0.03]');
+  }
+  function activerTache(btn) {
+    btn.dataset.active = 'true';
+    btn.classList.add('border-white/30', 'text-white', 'bg-white/10');
+    btn.classList.remove('border-white/10', 'text-app-textMuted', 'bg-white/[0.03]');
+  }
+
+  tacheBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dejaActive = btn === tacheActive;
+      tacheBtns.forEach(desactiverTache);
+      tacheActive = dejaActive ? null : btn;
+      if (tacheActive) activerTache(tacheActive);
+      if (modelSearch.value.trim().length >= 2) rechercherModeles(modelSearch.value.trim());
+    });
+  });
+
+  function rechercherModeles(q) {
+    const tache = tacheActive ? tacheActive.dataset.tache : '';
+    // une réponse encore en vol d'une frappe précédente est abandonnée : elle
+    // est plus lente que la dernière requête et ne doit pas l'écraser
+    if (rechercheAbort) rechercheAbort.abort();
+    rechercheAbort = new AbortController();
+    fetch('/api/recherche-modeles?q=' + encodeURIComponent(q) + '&tache=' + encodeURIComponent(tache), { signal: rechercheAbort.signal })
+      .then(r => r.json())
+      .then(data => afficherSuggestions(data.modeles, data.entreprises))
+      .catch(e => { if (e.name !== 'AbortError') throw e; });
+  }
+
+  function afficherSuggestions(resultats, entreprises) {
+    resultats = resultats || [];
+    entreprises = entreprises || [];
+    if (resultats.length === 0 && entreprises.length === 0) {
+      modelSuggestions.classList.add('hidden');
+      modelSuggestions.innerHTML = '';
+      return;
+    }
+    const htmlEntreprises = entreprises.map(e =>
+      `<button type="button" class="suggestion-entreprise-btn w-full flex items-center gap-2.5 text-left px-3.5 py-2 text-[13px] text-app-textPrimary hover:bg-white/10 transition-colors border-b border-white/10" data-recherche="${e.nom}">
+        ${e.avatar ? `<img src="${e.avatar}" class="w-5 h-5 rounded-full shrink-0 object-cover" alt="">` : `<span class="w-5 h-5 rounded-full shrink-0 bg-white/10"></span>`}
+        <span>Modèles <strong>${e.nom_complet || e.nom}</strong></span>
+      </button>`
+    ).join('');
+    const htmlModeles = resultats.map(m =>
+      `<button type="button" class="suggestion-btn w-full flex items-center gap-2.5 text-left px-3.5 py-2 text-[13px] text-app-textPrimary hover:bg-white/10 transition-colors" data-id="${m.id}">
+        ${m.avatar ? `<img src="${m.avatar}" class="w-5 h-5 rounded-sm shrink-0 object-cover" alt="">` : `<span class="w-5 h-5 rounded-sm shrink-0 bg-white/10"></span>`}
+        <span class="font-mono truncate">${m.id}</span>
+      </button>`
+    ).join('');
+    modelSuggestions.innerHTML = htmlEntreprises + htmlModeles;
+    modelSuggestions.classList.remove('hidden');
+  }
+
+  modelSearch.addEventListener('input', () => {
+    modelId.value = '';
+    const q = modelSearch.value.trim();
+    clearTimeout(debounceTimer);
+    if (q.length < 1) {
+      modelSuggestions.classList.add('hidden');
+      return;
+    }
+    debounceTimer = setTimeout(() => rechercherModeles(q), 150);
+  });
+
+  modelSuggestions.addEventListener('click', (e) => {
+    const entrepriseBtn = e.target.closest('.suggestion-entreprise-btn');
+    if (entrepriseBtn) {
+      modelSearch.value = entrepriseBtn.dataset.recherche;
+      rechercherModeles(entrepriseBtn.dataset.recherche);
+      return;
+    }
+    const btn = e.target.closest('.suggestion-btn');
+    if (!btn) return;
+    modelSearch.value = btn.dataset.id;
+    modelId.value = btn.dataset.id;
+    modelSuggestions.classList.add('hidden');
+  });
+
+  document.querySelectorAll('.famille-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      modelSearch.value = btn.dataset.recherche;
+      modelSearch.focus();
+      rechercherModeles(btn.dataset.recherche);
+      famillesPopover.classList.add('hidden');
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!modelSearch.contains(e.target) && !modelSuggestions.contains(e.target)) {
+      modelSuggestions.classList.add('hidden');
+    }
+  });
+
+  document.querySelector('form').addEventListener('submit', (e) => {
+    if (!modelId.value) {
+      if (!modelSearch.value.trim()) { e.preventDefault(); return; }
+      modelId.value = modelSearch.value.trim();
+    }
+    const nomCustom = document.getElementById('plateforme-custom-nom');
+    if (!plateformeValue.value && !nomCustom.value.trim()) {
+      e.preventDefault();
+      plateformeBtn.click();
+    }
+  });
+
+</script>
+<script>
+  // petit compagnon : les yeux suivent le curseur, la bulle elle-même ne bouge pas
+  const orb = document.getElementById('orb-compagnon');
+  const orbYeux = document.getElementById('orb-yeux');
+  document.addEventListener('mousemove', (e) => {
+    const rect = orb.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = e.clientX - cx;
+    const dy = e.clientY - cy;
+    const dist = Math.hypot(dx, dy) || 1;
+    const portee = 24;
+    const ox = (dx / dist) * Math.min(portee, Math.abs(dx) / 7);
+    const oy = (dy / dist) * Math.min(portee, Math.abs(dy) / 7);
+    orbYeux.style.transform = `translate(${ox}px, ${oy}px)`;
+  });
+</script>
+<script>
+  // reproduction fidèle du shader "Plasma" de metal-fx (preset chromatic, mode dark) :
+  // https://github.com/Jakubantalik/metal-fx — même GLSL, mêmes uniforms, même
+  // technique de composition (texture plasma découpée puis trou perforé au centre
+  // pour ne garder que l'anneau), portée ici en vanilla WebGL (pas de React/npm ici)
+  (function () {
+    const VERT_SRC = `
+      attribute vec2 a_position;
+      void main() { gl_Position = vec4(a_position, 0.0, 1.0); }
+    `;
+    const FRAG_SRC = `
+      precision highp float;
+      uniform vec2 u_resolution;
+      uniform float u_time;
+      uniform vec3 u_color1, u_color2, u_color3, u_color4, u_color5, u_color6, u_color7;
+      uniform float u_alpha1, u_alpha2, u_alpha3, u_alpha4, u_alpha5, u_alpha6, u_alpha7;
+      uniform float u_intensity, u_scale, u_direction;
+      uniform float u_softness, u_distortion, u_complexity, u_shape;
+      uniform float u_vignette, u_vigOpacity, u_blur, u_shaderOpacity;
+
+      vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec2 mod289v2(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec3 permute(vec3 x) { return mod289((x * 34.0 + 1.0) * x); }
+
+      float snoise(vec2 v) {
+        const vec4 C = vec4(0.211324865405187, 0.366025403784439,
+                            -0.577350269189626, 0.024390243902439);
+        vec2 i = floor(v + dot(v, C.yy));
+        vec2 x0 = v - i + dot(i, C.xx);
+        vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        vec4 x12 = x0.xyxy + C.xxzz;
+        x12.xy -= i1;
+        i = mod289v2(i);
+        vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+        vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+        m = m * m; m = m * m;
+        vec3 x_ = 2.0 * fract(p * C.www) - 1.0;
+        vec3 h = abs(x_) - 0.5;
+        vec3 ox = floor(x_ + 0.5);
+        vec3 a0 = x_ - ox;
+        m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+        vec3 g;
+        g.x = a0.x * x0.x + h.x * x0.y;
+        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+      }
+
+      float fbm(vec2 p, float oct) {
+        float val = 0.0, amp = 0.5;
+        int n = int(oct);
+        for (int i = 0; i < 7; i++) {
+          if (i >= n) break;
+          val += amp * snoise(p);
+          p *= 2.0;
+          amp *= 0.5;
+        }
+        return val;
+      }
+
+      float nfbm(vec2 p) { return fbm(p, 3.0 + u_complexity * 4.0); }
+
+      vec3 palette(float t) {
+        t = clamp(t, 0.0, 1.0);
+        t = t * t * (3.0 - 2.0 * t);
+        float k = 64.0;
+        float w1 = u_alpha1 * exp(-k * t * t);
+        float w2 = u_alpha2 * exp(-k * (t - 0.25) * (t - 0.25));
+        float w3 = u_alpha3 * exp(-k * (t - 0.5)  * (t - 0.5));
+        float w4 = u_alpha4 * exp(-k * (t - 0.75) * (t - 0.75));
+        float w5 = u_alpha5 * exp(-k * (t - 1.0)  * (t - 1.0));
+        float total = w1 + w2 + w3 + w4 + w5 + 0.0001;
+        return (u_color1 * w1 + u_color2 * w2 + u_color3 * w3 +
+                u_color4 * w4 + u_color5 * w5) / total;
+      }
+
+      vec2 warp(vec2 p, float t) {
+        float str = u_distortion * 2.0;
+        return vec2(
+          nfbm(p + vec2(t * 0.1, 0.0)),
+          nfbm(p + vec2(0.0, t * 0.12) + 5.0)
+        ) * str;
+      }
+
+      vec3 computeEffect(vec2 uv, float aspect, float t, float dist, float cpx) {
+        vec2 p = (uv - 0.5) * u_scale;
+        p.x *= aspect;
+        p += vec2(cos(u_direction), sin(u_direction)) * t * 0.15;
+        float freq = 3.0 + cpx * 8.0;
+        float val = 0.0;
+        val += sin(p.x * freq + t);
+        val += sin(p.y * freq + t * 1.3);
+        val += sin((p.x + p.y) * freq * 0.7 + t * 0.7);
+        val += sin(length(p) * freq * 0.8 - t * 1.5);
+        vec2 w = warp(p, t);
+        val += (w.x + w.y) * dist;
+        val = val * 0.2 * u_intensity + 0.5;
+        return palette(clamp(val, 0.0, 1.0));
+      }
+
+      void main() {
+        vec2 uv = gl_FragCoord.xy / u_resolution;
+        float aspect = u_resolution.x / u_resolution.y;
+        float t = u_time;
+        float dist = u_distortion;
+        float cpx = u_complexity;
+        vec3 col;
+        if (u_blur < 0.01) {
+          col = computeEffect(uv, aspect, t, dist, cpx);
+        } else {
+          float r = u_blur * 0.02;
+          col  = computeEffect(uv,                  aspect, t, dist, cpx) * 0.4;
+          col += computeEffect(uv + vec2( r, 0.0),  aspect, t, dist, cpx) * 0.15;
+          col += computeEffect(uv + vec2(-r, 0.0),  aspect, t, dist, cpx) * 0.15;
+          col += computeEffect(uv + vec2(0.0,  r),  aspect, t, dist, cpx) * 0.15;
+          col += computeEffect(uv + vec2(0.0, -r),  aspect, t, dist, cpx) * 0.15;
+        }
+        col = pow(col, vec3(1.3));
+        float edgeDist = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
+        float vigPx = 40.0 / min(u_resolution.x, u_resolution.y);
+        float vigRange = vigPx * (1.0 + u_vignette * 3.0);
+        float vig = edgeDist * edgeDist / (vigRange * vigRange);
+        vig = smoothstep(0.0, 1.0, vig);
+        col *= mix(1.0, vig, u_vignette * u_vigOpacity);
+        float colorAlpha = (u_alpha1 + u_alpha2 + u_alpha3 + u_alpha4 + u_alpha5) / 5.0;
+        float alpha = colorAlpha;
+        alpha += 0.0 * (u_softness + u_shape + u_alpha6 + u_alpha7 + u_color6.x + u_color7.x);
+        gl_FragColor = vec4(col, alpha * u_shaderOpacity);
+      }
+    `;
+
+    function hexToRgb(hex) {
+      const h = hex.replace('#', '');
+      return [parseInt(h.slice(0, 2), 16) / 255, parseInt(h.slice(2, 4), 16) / 255, parseInt(h.slice(4, 6), 16) / 255];
+    }
+
+    // preset "chromatic", mode "dark" — valeurs exactes de metal-fx/src/engine/presets.ts
+    const PRESET = {
+      // couleurs d'accent sur fond blanc dominant, mais encore nettement visibles
+      // (mélangées ~25% vers le blanc, pas 55% : il faut pouvoir les distinguer)
+      // d'après le vrai shader v2 (liquid-metal, npm metal-fx@2.0.11, décompilé) :
+      // le matériau est littéralement des bandes blanc/noir en alternance
+      // (color1 = rgb(.98,.98,1), color2 = rgb(.1,.1,.1)) — PAS une palette de
+      // teintes. La couleur ne vient que de la dispersion chromatique (filtre
+      // drop-shadow rouge/cyan déjà en place), pas de blobs pastel.
+      colors: ['#fafaff', '#1a1a1a', '#fafaff', '#1a1a1a', '#fafaff', '#1a1a1a', '#fafaff'],
+      alphas: [1, 1, 1, 1, 1, 1, 1],
+      direction: 80, speed: 1.6, intensity: 1.7, scale: 2.0,
+      softness: 0.18, distortion: 0.22, complexity: 0.5, shape: 1,
+      blur: 1, vignette: 0.26, vigOpacity: 0.6, shaderOpacity: 1,
+    };
+
+    const CANONICAL_GL_SIZE = 96;
+    const CANONICAL_PILL_W = 140, CANONICAL_PILL_H = 40;
+    const GL_DPR = Math.min(2, window.devicePixelRatio || 1);
+
+    const glCanvas = document.createElement('canvas');
+    glCanvas.width = Math.round(CANONICAL_GL_SIZE * GL_DPR);
+    glCanvas.height = Math.round(CANONICAL_GL_SIZE * GL_DPR);
+    const gl = glCanvas.getContext('webgl', { alpha: true, premultipliedAlpha: false, antialias: false });
+    if (!gl) return;
+
+    function compile(type, src) {
+      const sh = gl.createShader(type);
+      gl.shaderSource(sh, src);
+      gl.compileShader(sh);
+      if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(sh));
+      }
+      return sh;
+    }
+    const program = gl.createProgram();
+    gl.attachShader(program, compile(gl.VERTEX_SHADER, VERT_SRC));
+    gl.attachShader(program, compile(gl.FRAGMENT_SHADER, FRAG_SRC));
+    gl.linkProgram(program);
+    gl.useProgram(program);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    const buffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+    const posLoc = gl.getAttribLocation(program, 'a_position');
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+    const U = {};
+    ['u_resolution', 'u_time', 'u_color1', 'u_color2', 'u_color3', 'u_color4', 'u_color5', 'u_color6', 'u_color7',
+     'u_alpha1', 'u_alpha2', 'u_alpha3', 'u_alpha4', 'u_alpha5', 'u_alpha6', 'u_alpha7',
+     'u_intensity', 'u_scale', 'u_direction', 'u_softness', 'u_distortion', 'u_complexity', 'u_shape',
+     'u_vignette', 'u_vigOpacity', 'u_blur', 'u_shaderOpacity'].forEach(n => { U[n] = gl.getUniformLocation(program, n); });
+
+    gl.uniform2f(U.u_resolution, glCanvas.width, glCanvas.height);
+    for (let i = 0; i < 7; i++) {
+      const [r, g, b] = hexToRgb(PRESET.colors[i]);
+      gl.uniform3f(U['u_color' + (i + 1)], r, g, b);
+      gl.uniform1f(U['u_alpha' + (i + 1)], PRESET.alphas[i]);
+    }
+    gl.uniform1f(U.u_intensity, PRESET.intensity);
+    gl.uniform1f(U.u_scale, PRESET.scale);
+    gl.uniform1f(U.u_direction, (PRESET.direction * Math.PI) / 180);
+    gl.uniform1f(U.u_softness, PRESET.softness);
+    gl.uniform1f(U.u_distortion, PRESET.distortion);
+    gl.uniform1f(U.u_complexity, PRESET.complexity);
+    gl.uniform1f(U.u_shape, PRESET.shape);
+    gl.uniform1f(U.u_vignette, PRESET.vignette);
+    gl.uniform1f(U.u_vigOpacity, PRESET.vigOpacity);
+    gl.uniform1f(U.u_blur, PRESET.blur);
+    gl.uniform1f(U.u_shaderOpacity, PRESET.shaderOpacity);
+
+    // instance : le bouton flèche, en cercle (ringCssPx=2, shaderScale=1.3 comme metal-fx)
+    const outCanvas = document.getElementById('arrow-metal-canvas');
+    const outCtx = outCanvas.getContext('2d');
+    // calque de halo séparé, placé DERRIÈRE le bouton (lui-même opaque) : le flou
+    // ne peut donc déborder que vers l'extérieur du cercle, jamais tacher l'intérieur
+    const glowCanvas = document.getElementById('arrow-metal-glow');
+    const glowCtx = glowCanvas.getContext('2d');
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+
+    function sizeOutCanvas() {
+      const rect = outCanvas.getBoundingClientRect();
+      outCanvas.width = Math.max(1, Math.round(rect.width * dpr));
+      outCanvas.height = Math.max(1, Math.round(rect.height * dpr));
+      glowCanvas.width = outCanvas.width;
+      glowCanvas.height = outCanvas.height;
+      return { w: rect.width, h: rect.height };
+    }
+    let cssSize = sizeOutCanvas();
+    window.addEventListener('resize', () => { cssSize = sizeOutCanvas(); });
+
+    const ringCssPx = 2;
+    const shaderScale = 1.3;
+    const startMs = performance.now();
+
+    // machine à états + rendu du halo, portés depuis le vrai moteur v2 décompilé
+    // (metal-fx@2.0.11/dist/index.es.js, objet de constantes "Ma") — valeurs
+    // exactes, y compris les 4 passes du halo et les 2 passes de l'"extra"
+    const GLOW = {
+      lumLo: 0.08, lumHi: 0.32, baseOp: 0.34, peakOp: 0.85,
+      relocateDelta: 0.05, minDwellMs: 1500, relocFadeMs: 300, relocFadeOutMs: 450,
+      haloHalfLen: 7.8, extraHalfLen: 9.13952 / 3,
+      haloOpMul: 2, extraIntensity: 3.51,
+      wanderRange: 15, wanderLerp: 0.0075, fadeRate: 0.00875,
+      haloStroke: [26.4, 15.6, 7.2, 3], haloBlur: [8.4, 4.8, 2.1, 0.9], haloOp: [0.385, 0.595, 0.7, 0.7],
+      extraStroke: [4 / 3, 2 / 3], extraBlur: [2 / 3, 1.35 / 3], extraOp: [0.85, 1],
+    };
+    // ratio taille réelle / référence pill (140x40, r=20) du moteur — tous les
+    // halfLen/stroke/blur ci-dessus sont calibrés pour cette référence et se
+    // redimensionnent au prorata de la vraie taille du bouton
+    const REF_PILL_PERIM = 2 * Math.max(0, 140 - 40) + 2 * Math.max(0, 40 - 40) + 2 * Math.PI * 20;
+    let currentAngle = -Math.PI / 2, appearedAt = 0, glowOpacity = 0;
+    let relocating = false, relocOut = false, relocFrom = 0, relocStart = 0, relocNextAngle = 0;
+    let wanderS = 0, wanderTargetS = 0, wanderFrames = 0;
+    function smoothstep(lo, hi, x) {
+      const t = Math.max(0, Math.min(1, (x - lo) / (hi - lo)));
+      return t * t * (3 - 2 * t);
+    }
+
+    // référence carrée pour le cercle (pas 140x40 du pill : un ratio non-carré
+    // là déforme le carré source et laisse des bords hors-cadre — bug trouvé en
+    // comparant un rendu dpr=1 propre à un rendu dpr=2 cassé, pixel par pixel)
+    const CANONICAL_CIRCLE = 36;
+
+    function copyRing() {
+      const dw = outCanvas.width, dh = outCanvas.height;
+      if (dw < 1 || dh < 1) return;
+      const cw = glCanvas.width, ch = glCanvas.height;
+      const bdW = CANONICAL_CIRCLE * dpr, bdH = CANONICAL_CIRCLE * dpr;
+      let srcW = (dw * (cw / bdW)) / shaderScale;
+      let srcH = (dh * (ch / bdH)) / shaderScale;
+      if (srcW > cw) srcW = cw;
+      if (srcH > ch) srcH = ch;
+      const sx = Math.max(0, (cw - srcW) / 2);
+      const sy = Math.max(0, (ch - srcH) / 2);
+      outCtx.clearRect(0, 0, dw, dh);
+      // dispersion chromatique (u_shiftRed / u_shiftBlue du shader v2) : léger
+      // liseré rouge/cyan de part et d'autre, comme une aberration chromatique
+      outCtx.filter = 'drop-shadow(0.55px 0 0 rgba(255,90,90,0.45)) drop-shadow(-0.55px 0 0 rgba(90,190,255,0.45))';
+      outCtx.drawImage(glCanvas, sx, sy, srcW, srcH, 0, 0, dw, dh);
+      outCtx.filter = 'none';
+
+      // colorTint du preset "chromatic" réel : un léger bleu froid (#88ccff à ~18%)
+      outCtx.save();
+      outCtx.globalCompositeOperation = 'source-atop';
+      outCtx.fillStyle = 'rgba(136,204,255,0.18)';
+      outCtx.fillRect(0, 0, dw, dh);
+      outCtx.restore();
+
+      const stroke0 = ringCssPx * dpr;
+      const cx = dw / 2, cy = dh / 2;
+      const radiusCss = (Math.min(dw, dh) / 2) / dpr;
+      const hotR = Math.min(dw, dh) / 2 - stroke0 / 2;
+      const now = performance.now();
+      const sizeRatio = (2 * Math.PI * radiusCss) / REF_PILL_PERIM;
+
+      // 1) trouve l'angle le plus lumineux du périmètre (candidat de relocalisation)
+      let bestAngle = currentAngle, bestLum = 0, curLum = 0;
+      {
+        const probe = outCtx.getImageData(0, 0, dw, dh).data;
+        const N = 20;
+        for (let i = 0; i < N; i++) {
+          const a = (i / N) * Math.PI * 2;
+          const x = Math.round(cx + hotR * Math.cos(a));
+          const y = Math.round(cy + hotR * Math.sin(a));
+          if (x < 0 || x >= dw || y < 0 || y >= dh) continue;
+          const idx = (y * dw + x) * 4;
+          if (probe[idx + 3] < 10) continue;
+          const lum = (0.2126 * probe[idx] + 0.7152 * probe[idx + 1] + 0.0722 * probe[idx + 2]) / 255;
+          if (lum > bestLum) { bestLum = lum; bestAngle = a; }
+          const dCur = Math.atan2(Math.sin(a - currentAngle), Math.cos(a - currentAngle));
+          if (Math.abs(dCur) < (Math.PI * 2 / N)) curLum = lum;
+        }
+      }
+
+      // 2) machine à états : dwell minimum, puis fondu vers le nouveau point si
+      // un rival dépasse nettement la luminosité actuelle
+      const dwellActive = appearedAt > 0 && now - appearedAt < GLOW.minDwellMs;
+      const targetOp = GLOW.baseOp + (GLOW.peakOp - GLOW.baseOp) * smoothstep(GLOW.lumLo, GLOW.lumHi, curLum);
+      if (relocating) {
+        const dur = relocOut ? GLOW.relocFadeOutMs : GLOW.relocFadeMs;
+        const k = Math.min(1, (now - relocStart) / dur);
+        if (relocOut) {
+          glowOpacity = relocFrom * (1 - k);
+          if (k >= 1) { relocOut = false; relocStart = now; currentAngle = relocNextAngle; wanderS = 0; wanderTargetS = 0; wanderFrames = 0; }
+        } else {
+          glowOpacity = relocFrom + (targetOp - relocFrom) * k;
+          if (k >= 1) { relocating = false; appearedAt = now; }
+        }
+      } else if (!dwellActive && bestLum - curLum > GLOW.relocateDelta) {
+        relocating = true; relocOut = true; relocStart = now; relocFrom = glowOpacity; relocNextAngle = bestAngle;
+      } else {
+        glowOpacity += (targetOp - glowOpacity) * GLOW.fadeRate;
+      }
+      glowOpacity = Math.max(0, Math.min(1, glowOpacity));
+
+      // 3) dérive lente ("wander") autour du point courant, comme le vrai moteur
+      if (wanderFrames++ > 120) { wanderTargetS = (Math.random() * 2 - 1) * GLOW.wanderRange * sizeRatio; wanderFrames = 0; }
+      wanderS += (wanderTargetS - wanderS) * GLOW.wanderLerp;
+      const drawAngle = currentAngle + wanderS / radiusCss;
+
+      // la vraie couche "halo" se teinte de la couleur locale du matériau à cet
+      // endroit (dispersion chromatique), pas blanc pur — c'est ce qui donne les
+      // différentes couleurs en tournant ; seule la couche "extra" reste blanche
+      const hotX = Math.round(cx + hotR * Math.cos(drawAngle)), hotY = Math.round(cy + hotR * Math.sin(drawAngle));
+      let tintR = 255, tintG = 255, tintB = 255;
+      if (hotX >= 0 && hotX < dw && hotY >= 0 && hotY < dh) {
+        const hp = outCtx.getImageData(hotX, hotY, 1, 1).data;
+        if (hp[3] > 10) {
+          const peak = Math.max(hp[0], hp[1], hp[2], 1);
+          tintR = Math.round(255 * (hp[0] / peak));
+          tintG = Math.round(255 * (hp[1] / peak));
+          tintB = Math.round(255 * (hp[2] / peak));
+        }
+      }
+
+      // dessine les 4 passes du halo (teinté) + 2 passes de l'extra (blanc) —
+      // chaque passe a sa propre largeur/flou/opacité, exactement les valeurs
+      // du vrai moteur (A.haloStroke*/haloBlur*/haloOp*, extraStroke*/...),
+      // mises à l'échelle du vrai bouton via sizeRatio
+      function drawGlow(ctx) {
+        const halfAngle = (GLOW.haloHalfLen * sizeRatio) / radiusCss;
+        const hp1x = cx + hotR * Math.cos(drawAngle - halfAngle), hp1y = cy + hotR * Math.sin(drawAngle - halfAngle);
+        const hp2x = cx + hotR * Math.cos(drawAngle + halfAngle), hp2y = cy + hotR * Math.sin(drawAngle + halfAngle);
+        for (let i = 0; i < 4; i++) {
+          const op = Math.min(1, glowOpacity * GLOW.haloOpMul * GLOW.haloOp[i]);
+          if (op < 0.01) continue;
+          ctx.save();
+          const g = ctx.createLinearGradient(hp1x, hp1y, hp2x, hp2y);
+          g.addColorStop(0, `rgba(${tintR},${tintG},${tintB},0)`);
+          g.addColorStop(0.5, `rgba(${tintR},${tintG},${tintB},${op.toFixed(3)})`);
+          g.addColorStop(1, `rgba(${tintR},${tintG},${tintB},0)`);
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.filter = GLOW.haloBlur[i] * sizeRatio >= 0.3 ? `blur(${(GLOW.haloBlur[i] * sizeRatio * dpr).toFixed(2)}px)` : 'none';
+          ctx.lineWidth = Math.max(0.5, GLOW.haloStroke[i] * sizeRatio * dpr);
+          ctx.strokeStyle = g;
+          ctx.beginPath();
+          ctx.arc(cx, cy, hotR, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+        const halfAngleExtra = (GLOW.extraHalfLen * sizeRatio) / radiusCss;
+        const ep1x = cx + hotR * Math.cos(drawAngle - halfAngleExtra), ep1y = cy + hotR * Math.sin(drawAngle - halfAngleExtra);
+        const ep2x = cx + hotR * Math.cos(drawAngle + halfAngleExtra), ep2y = cy + hotR * Math.sin(drawAngle + halfAngleExtra);
+        for (let i = 0; i < 2; i++) {
+          const op = Math.min(1, glowOpacity * GLOW.extraIntensity * GLOW.extraOp[i]);
+          if (op < 0.01) continue;
+          ctx.save();
+          const g = ctx.createLinearGradient(ep1x, ep1y, ep2x, ep2y);
+          g.addColorStop(0, `rgba(255,255,255,0)`);
+          g.addColorStop(0.5, `rgba(255,255,255,${op.toFixed(3)})`);
+          g.addColorStop(1, `rgba(255,255,255,0)`);
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.filter = GLOW.extraBlur[i] * sizeRatio >= 0.3 ? `blur(${(GLOW.extraBlur[i] * sizeRatio * dpr).toFixed(2)}px)` : 'none';
+          ctx.lineWidth = Math.max(0.5, GLOW.extraStroke[i] * sizeRatio * dpr);
+          ctx.strokeStyle = g;
+          ctx.beginPath();
+          ctx.arc(cx, cy, hotR, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.filter = 'none';
+      }
+      drawGlow(outCtx);
+
+      // perfore le centre pour ne garder que l'anneau
+      const stroke = ringCssPx * dpr;
+      const cornerRadius = Math.min(dw, dh) / 2;
+      const innerR = Math.max(0, cornerRadius - stroke);
+      outCtx.save();
+      outCtx.globalCompositeOperation = 'destination-out';
+      outCtx.fillStyle = '#000';
+      outCtx.beginPath();
+      if (outCtx.roundRect) outCtx.roundRect(stroke, stroke, dw - 2 * stroke, dh - 2 * stroke, innerR);
+      else outCtx.rect(stroke, stroke, dw - 2 * stroke, dh - 2 * stroke);
+      outCtx.fill();
+      outCtx.restore();
+
+      // innerShadow (v2) : ombre portée vers l'intérieur de l'anneau pour donner
+      // un effet de profondeur / relief "enfoncé dans le métal"
+      outCtx.save();
+      outCtx.globalCompositeOperation = 'source-atop';
+      const innerGrad = outCtx.createRadialGradient(cx, cy, Math.max(0, innerR - stroke), cx, cy, innerR + stroke);
+      innerGrad.addColorStop(0, 'rgba(0,0,0,0.6)');
+      innerGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      outCtx.fillStyle = innerGrad;
+      outCtx.beginPath();
+      outCtx.arc(cx, cy, cornerRadius, 0, Math.PI * 2);
+      outCtx.fill();
+      outCtx.restore();
+
+      // le halo ne doit montrer QUE le point chaud qui se déplace, pas tout le
+      // matériau recopié (sinon les zones claires/sombres fixes du matériau,
+      // une fois floutées, ressemblent à des "boules" immobiles)
+      glowCtx.clearRect(0, 0, dw, dh);
+      drawGlow(glowCtx);
+    }
+
+    function frame(now) {
+      const t = ((now - startMs) / 1000) * PRESET.speed;
+      gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniform1f(U.u_time, t);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      copyRing();
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
 </script>
 </body></html>

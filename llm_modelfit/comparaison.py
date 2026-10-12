@@ -13,6 +13,8 @@ def charger_plateformes():
     for p in plateformes:
         p["has_tensor_cores"] = bool(p["has_tensor_cores"])
         p["unified_memory"] = bool(p["unified_memory"])
+    # organisées par catégorie (GPU puis cartes embarquées) puis par mémoire décroissante
+    plateformes.sort(key=lambda p: (p["unified_memory"], -p["memory_gb"]))
     return plateformes
 
 
@@ -24,6 +26,7 @@ def verifier_compat(total_go, plateforme):
         "requis_go": round(total_go, 3),
         "compatible": total_go <= dispo,
         "taux_go": round(total_go / dispo * 100, 1),
+        "unified_memory": plateforme.get("unified_memory", False),
     }
 
 

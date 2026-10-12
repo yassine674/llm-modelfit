@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<style>
+.fav-bg { fill: #0a0a0a; }
+.fav-eye { fill: #fff; }
+@media (prefers-color-scheme: dark) {
+  .fav-bg { fill: #fff; }
+  .fav-eye { fill: #0a0a0a; }
+}
+</style>
+<circle class="fav-bg" cx="32" cy="32" r="30"/>
+<rect class="fav-eye" x="32" y="18" width="7" height="18" rx="3.5" transform="rotate(-12 35.5 27)"/>
+<rect class="fav-eye" x="43" y="16" width="7" height="18" rx="3.5" transform="rotate(-12 46.5 25)"/>
+</svg>

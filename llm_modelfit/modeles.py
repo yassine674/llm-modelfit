@@ -32,8 +32,19 @@ def get_specs(model_id):
             raise RuntimeError("nb de paramètres indisponible via l'API")
         specs["nb_param"] = nb_param
         return specs
-    except RuntimeError:
+    except RuntimeError as e:
         secours = _depuis_local(model_id)
         if secours is not None:
+            secours["avertissement"] = str(e)
             return secours
+
+        # pas de config.json exploitable (modèle de diffusion, multi-composants...) :
+        # si on peut au moins compter les paramètres, on estime le poids seul
+        try:
+            nb_param = get_nb_param(model_id)
+        except Exception:
+            nb_param = None
+        if nb_param is not None:
+            return {"poids_seulement": True, "nb_param": nb_param, "avertissement": str(e)}
+
         raise

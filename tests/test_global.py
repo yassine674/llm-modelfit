@@ -42,8 +42,8 @@ verifier("note_thermique(400) == refroidissement actif nécessaire", note_thermi
 plateformes = charger_plateformes()
 verifier("17 plateformes dans la base", len(plateformes) == 17)
 
-compat_a100 = verifier_compat(total_go, plateformes[0])
-verifier("Llama INT4 8K compatible avec A100", compat_a100["compatible"] is True)
+compat_plus_gros = verifier_compat(total_go, plateformes[0])
+verifier("Llama INT4 8K compatible avec la plateforme la plus spacieuse", compat_plus_gros["compatible"] is True)
 
 resultats_tries = comparer_toutes_plateformes(total_go)
 verifier("comparer_toutes_plateformes trie les compatibles en premier", resultats_tries[0]["compatible"] is True)

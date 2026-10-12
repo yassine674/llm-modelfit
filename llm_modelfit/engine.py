@@ -30,7 +30,12 @@ def octets_vers_go(octets):
 
 def memoire_totale(specs, precision, contexte, precision_kv="FP16", pct_buffers=0.1):
     poids = memoire_poids(specs["nb_param"], precision)
-    cache = memoire_cache_kv(specs["num_layers"], specs["num_kv_heads"], specs["head_dim"], contexte, precision_kv)
+    # modèle sans décodeur texte (diffusion, etc.) : pas de génération token par
+    # token, donc pas de cache KV ni de notion de longueur de contexte
+    if specs.get("poids_seulement"):
+        cache = 0
+    else:
+        cache = memoire_cache_kv(specs["num_layers"], specs["num_kv_heads"], specs["head_dim"], contexte, precision_kv)
     buffers = memoire_buffers(poids, cache, pct_buffers)
 
     return {
@@ -52,6 +57,13 @@ def autonomie_heures(capacite_wh, puissance_watts):
     if not puissance_watts:
         return None
     return capacite_wh / puissance_watts
+
+
+TENSION_BATTERIE_V = 5.0  # alimentation typique des cartes embarquées (USB-C / barrel 5V)
+
+
+def mah_vers_wh(capacite_mah, tension_v=TENSION_BATTERIE_V):
+    return capacite_mah * tension_v / 1000
 
 
 def note_thermique(puissance_watts):
