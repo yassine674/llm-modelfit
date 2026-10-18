@@ -1,13 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
 <style>
 .fav-bg { fill: #0a0a0a; }
-.fav-eye { fill: #fff; }
+.fav-fg { stroke: #fff; }
+.fav-dot { fill: #fff; }
 @media (prefers-color-scheme: dark) {
   .fav-bg { fill: #fff; }
-  .fav-eye { fill: #0a0a0a; }
+  .fav-fg { stroke: #0a0a0a; }
+  .fav-dot { fill: #0a0a0a; }
 }
 </style>
-<circle class="fav-bg" cx="32" cy="32" r="30"/>
-<rect class="fav-eye" x="32" y="18" width="7" height="18" rx="3.5" transform="rotate(-12 35.5 27)"/>
-<rect class="fav-eye" x="43" y="16" width="7" height="18" rx="3.5" transform="rotate(-12 46.5 25)"/>
+<rect class="fav-bg" x="2" y="2" width="60" height="60" rx="19"/>
+<g class="fav-fg" fill="none" stroke-width="3.4">
+<ellipse cx="32" cy="32" rx="17" ry="8" transform="rotate(-35 32 32)"/>
+<ellipse cx="32" cy="32" rx="17" ry="8" transform="rotate(35 32 32)"/>
+</g>
+<circle class="fav-dot" cx="32" cy="32" r="5"/>
 </svg>

@@ -1,0 +1,16 @@
+# dépendances du script benchmark_reel.py uniquement — à installer seulement
+# sur la machine de test, pas dans l'environnement de dev principal.
+#
+# NVIDIA A100 / toute machine x86_64 avec GPU CUDA : installer tel quel.
+#
+# Jetson (Orin, Xavier...) : retirer la ligne "torch" ci-dessous et installer
+# le wheel PyTorch fourni par NVIDIA pour Jetson à la place (pas celui de
+# PyPI) : https://developer.nvidia.com/embedded/downloads#?search=PyTorch
+#
+# Raspberry Pi (CPU seulement, pas de GPU) : bitsandbytes ne sert à rien
+# (quantification INT8/INT4 nécessite CUDA) et peut échouer à l'installation
+# sur ARM — retirer cette ligne si l'installation plante.
+torch
+transformers
+accelerate
+bitsandbytes

@@ -81,6 +81,60 @@ def plateformes_avec_images():
     return plateformes
 
 
+def interpreter_thermique(note):
+    return {
+        "passif": "Aucun refroidissement actif nécessaire : convient à un boîtier fermé.",
+        "ventilation recommandée": "Prévoyez une ventilation ; évitez un boîtier totalement fermé.",
+        "refroidissement actif nécessaire": "Refroidissement actif requis : déconseillé en boîtier fermé ou pour un usage prolongé.",
+    }.get(note, "")
+
+
+def interpreter_autonomie(heures):
+    if heures is None:
+        return None
+    if heures < 1:
+        return "insuffisant pour un usage pratique"
+    if heures < 3:
+        return "suffisant pour une démonstration courte"
+    if heures < 8:
+        return "suffisant pour une session de travail complète"
+    return "suffisant pour une journée complète sans recharge"
+
+
+def expliquer_recommandation(recommandee, precision_actuelle, plateforme_actuelle, total_go_actuel, plateformes_par_nom):
+    meme_plateforme = recommandee["plateforme"] == plateforme_actuelle["name"]
+    meme_precision = recommandee["precision"] == precision_actuelle
+    dispo_actuel = plateforme_actuelle["memory_gb"]
+    p_reco = plateformes_par_nom.get(recommandee["plateforme"])
+    dispo_reco = p_reco["memory_gb"] if p_reco else None
+
+    if meme_plateforme and not meme_precision:
+        phrase = (
+            f"Sur {plateforme_actuelle['name']}, {precision_actuelle} occupe {total_go_actuel:.1f} Go "
+            f"pour {dispo_actuel} Go disponibles, ça ne passe pas. En passant à {recommandee['precision']}, "
+            f"l'empreinte tombe à {recommandee['total_go']:.1f} Go, ce qui tient sur la même plateforme."
+        )
+    elif meme_precision and not meme_plateforme:
+        phrase = (
+            f"{precision_actuelle} nécessite {total_go_actuel:.1f} Go, ce qui dépasse les {dispo_actuel} Go de "
+            f"{plateforme_actuelle['name']}. {recommandee['plateforme']}"
+            + (f" offre {dispo_reco} Go" if dispo_reco else " dispose de plus de mémoire")
+            + ", suffisant pour garder la même précision."
+        )
+    else:
+        phrase = (
+            f"Aucune précision ne tient sur {plateforme_actuelle['name']} ({dispo_actuel} Go disponibles). "
+            f"En combinant {recommandee['precision']} avec {recommandee['plateforme']}"
+            + (f" ({dispo_reco} Go disponibles)" if dispo_reco else "")
+            + f", le modèle tient ({recommandee['total_go']:.1f} Go requis)."
+        )
+
+    if recommandee.get("nb_gpu") and recommandee["nb_gpu"] > 1:
+        phrase += f" Cette configuration répartit le modèle sur {recommandee['nb_gpu']} GPU."
+
+    return phrase
+
+
 def image_plateforme(nom):
     nom = nom.lower()
     if "jetson" in nom:
@@ -161,7 +215,10 @@ def dashboard():
 
     avertissement = specs.pop("avertissement", None)
     diagnostic = diagnostiquer(specs, precision, contexte, plateforme, capacite_batterie_wh=batterie)
-    ajouter_historique(modele_id, precision, contexte, plateforme["name"], diagnostic)
+    # la page d'accueil précharge cette URL (fetch pendant l'animation) avant la vraie
+    # navigation : ce header marque le préchargement pour ne pas doubler la ligne d'historique
+    if not request.headers.get("X-Precharge"):
+        ajouter_historique(modele_id, precision, contexte, plateforme["name"], diagnostic)
 
     courbe = [
         {"contexte": c, "total_go": octets_vers_go(memoire_totale(specs, precision, c)["total"])}
@@ -172,6 +229,13 @@ def dashboard():
     for c in comparaisons:
         c["image"] = image_plateforme(c["plateforme"])
     historique_recent = list(reversed(charger_historique()))[:3]
+
+    explication_recommandation = None
+    if diagnostic["meilleures_options"]:
+        plateformes_par_nom = {p["name"]: p for p in plateformes}
+        explication_recommandation = expliquer_recommandation(
+            diagnostic["meilleures_options"][0], precision, plateforme, diagnostic["detail_go"]["total"], plateformes_par_nom
+        )
 
     total_go = diagnostic["detail_go"]["total"]
     segments = [
@@ -202,6 +266,9 @@ def dashboard():
         precisions=PRECISIONS,
         plateformes=plateformes,
         historique_recent=historique_recent,
+        explication_recommandation=explication_recommandation,
+        thermique_consequence=interpreter_thermique(diagnostic["note_thermique"]),
+        autonomie_qualif=interpreter_autonomie(diagnostic["autonomie_heures"]),
     )
 
 
@@ -209,9 +276,17 @@ def dashboard():
 def historique():
     plateformes_par_nom = {p["name"]: p for p in charger_plateformes()}
     entrees = list(reversed(charger_historique()))
+
+    orgs = {e["modele"].split("/")[0] for e in entrees if "/" in e["modele"]}
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        avatars = dict(zip(orgs, executor.map(avatar_auteur, orgs)))
+
     for e in entrees:
         p = plateformes_par_nom.get(e["plateforme"])
         e["dispo_go"] = p["memory_gb"] if p else None
+        e["image_plateforme"] = image_plateforme(e["plateforme"])
+        org = e["modele"].split("/")[0] if "/" in e["modele"] else None
+        e["avatar_modele"] = avatars.get(org)
     return render_template(
         "historique.html",
         entrees=entrees,

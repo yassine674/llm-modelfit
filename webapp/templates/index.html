@@ -3,6 +3,7 @@
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>LLM Memory Estimator</title>
+<meta content="same-origin" name="view-transition">
 <link href="{{ url_for('static', filename='img/favicon.svg') }}?v=2" rel="icon" type="image/svg+xml">
 <link href="{{ url_for('static', filename='img/favicon-32.png') }}?v=2" rel="icon" sizes="32x32" type="image/png">
 <link href="{{ url_for('static', filename='img/apple-touch-icon.png') }}?v=2" rel="apple-touch-icon">
@@ -20,7 +21,7 @@
               borderActive: 'rgba(255, 255, 255, 0.16)',
               textPrimary: '#F2F2F2',
               textMuted: '#7F858D',
-              textSubtle: '#555555',
+              textSubtle: '#808080',
             }
           },
           fontFamily: {
@@ -64,6 +65,22 @@
       50% { transform: translateY(-3px); }
     }
     .mascot-float { display: inline-flex; animation: mascot-float 3.4s ease-in-out infinite; }
+    ::view-transition-group(root) { animation-duration: 220ms; }
+    ::view-transition-group(hero-morph) { animation-duration: 520ms; animation-timing-function: cubic-bezier(.22,1,.36,1); }
+    ::view-transition-group(brand-mascot) { animation-duration: 420ms; animation-timing-function: cubic-bezier(.22,1,.36,1); }
+    .chatbar-face { transition: opacity 400ms ease-out, filter 400ms ease-out; }
+    #recherche-orb { transition: opacity 350ms ease-out 100ms; }
+    #post-chatbar { transition: opacity 320ms ease-out, filter 320ms ease-out, transform 320ms ease-out; }
+    #recherche-orb-label { transition: opacity 180ms ease-out; }
+    #chatbar.is-launching { width: 128px; height: 128px; padding: 0; border-radius: 999px; }
+    #chatbar.is-launching .chatbar-face { opacity: 0; filter: blur(6px); pointer-events: none; }
+    #chatbar.is-launching #recherche-orb { opacity: 1; }
+    #post-chatbar.is-launching { opacity: 0; filter: blur(4px); transform: translateY(4px); pointer-events: none; }
+    #orb-compagnon.is-launching { opacity: 0; }
+    @keyframes orb-dot { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+    #recherche-orb-dots i { display: inline-block; width: 3px; height: 3px; border-radius: 999px; background: currentColor; animation: orb-dot 1.1s ease-in-out infinite; }
+    #recherche-orb-dots i:nth-child(2) { animation-delay: .12s; }
+    #recherche-orb-dots i:nth-child(3) { animation-delay: .24s; }
     #orb-compagnon { transition: transform .5s cubic-bezier(.22,1.5,.5,1); }
     #orb-yeux { transition: transform .12s ease-out; }
     :root { --spring: linear(0, 0.062 3.4%, 0.24 7.5%, 0.51 12.5%, 0.76 17.9%, 0.905 22.4%, 0.997 27.2%, 1.038 32.4%, 1.05 37.4%, 1.044 42.7%, 1.028 49.2%, 1.012 56.9%, 1.003 65.7%, 0.999 76%, 1); }
@@ -99,11 +116,11 @@
 </head>
 <body class="min-h-screen bg-[#050505] text-app-textPrimary font-sans antialiased overflow-x-hidden flex flex-col selection:bg-neutral-800 selection:text-white">
 <div class="fixed top-0 inset-x-0 z-30 w-full px-4 pt-4 pointer-events-none">
-<header class="pointer-events-auto relative mx-auto max-w-[700px] h-[52px] rounded-full border border-white/10 bg-white/[0.045] backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.6)] px-3 pl-4 flex items-center justify-between overflow-hidden">
+<header class="pointer-events-auto relative mx-auto max-w-[920px] h-[52px] rounded-full border border-white/10 bg-white/[0.045] backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.6)] px-3 pl-4 flex items-center justify-between overflow-hidden">
 <div aria-hidden="true" class="pointer-events-none absolute -top-12 left-16 w-28 h-28 rounded-full bg-gradient-to-br from-[#5b8def]/40 to-transparent blur-2xl"></div>
 <div aria-hidden="true" class="pointer-events-none absolute -bottom-14 right-24 w-32 h-32 rounded-full bg-gradient-to-br from-[#8b5cf6]/30 to-transparent blur-2xl"></div>
 <a class="relative z-10 flex items-center gap-2.5 group" href="{{ url_for('index') }}">
-<span class="mascot-float relative inline-flex">
+<span class="mascot-float relative inline-flex" style="view-transition-name: brand-mascot">
 <span aria-hidden="true" class="absolute inset-0 rounded-full blur-md opacity-70 bg-gradient-to-br from-[#5b8def] to-[#8b5cf6] group-hover:opacity-100 transition-opacity"></span>
 <span aria-hidden="true" class="mascot relative inline-flex shrink-0 items-center justify-center w-7 h-7 bg-gradient-to-br from-[#5b8def] to-[#8b5cf6] shadow-lg shadow-black/40">
 <span class="flex gap-[3px] translate-x-[2px] translate-y-[1.5px]">
@@ -124,11 +141,9 @@ Historique
 </div>
 <main class="relative flex-1 w-full px-6 pt-24 pb-16 flex items-center justify-center">
 <div class="fixed inset-0 overflow-hidden pointer-events-none select-none z-0">
-<div class="absolute -top-32 right-[-10%] w-[780px] h-[780px] rounded-full" style="background:#4f6bed; opacity:0.28; filter: blur(130px);"></div>
-<div class="absolute top-[22%] right-[-4%] w-[620px] h-[620px] rounded-full" style="background:#8b5cf6; opacity:0.18; filter: blur(120px);"></div>
-<div class="absolute bottom-[-12%] right-[8%] w-[560px] h-[560px] rounded-full" style="background:#22d3ee; opacity:0.16; filter: blur(110px);"></div>
+<canvas class="absolute inset-0 w-full h-full" id="gradient-bg"></canvas>
 <div class="absolute inset-0" style="background-image:url('{{ url_for('static', filename='img/grain.svg') }}'); background-size: 220px 220px; opacity:0.05; mix-blend-mode: overlay;"></div>
-<div class="hidden lg:block absolute top-[30%] right-[7%]" id="orb-compagnon" aria-hidden="true">
+<div class="hidden lg:block absolute top-[30%] right-[7%] transition-opacity duration-300 ease-out" id="orb-compagnon" aria-hidden="true">
 <span class="mascot inline-flex items-center justify-center w-36 h-36 bg-gradient-to-br from-[#5b8def] to-[#8b5cf6] shadow-2xl shadow-black/50">
 <span class="flex gap-3.5" id="orb-yeux">
 <span class="mascot-eye block w-[11px] h-7 rounded-[7px] bg-[#050505]" style="animation-duration: 4.2s;"></span>
@@ -138,17 +153,17 @@ Historique
 </div>
 </div>
 <div class="relative z-10 w-full max-w-[820px] flex flex-col items-center text-center">
-<span class="text-[10px] uppercase font-mono tracking-[3px] text-app-textMuted mb-3 block select-none">LLM Memory Analysis</span>
 <h1 class="text-[38px] sm:text-[44px] font-medium leading-[1.1] tracking-[-0.03em] text-white mb-3">Estimez la mémoire de votre modèle LLM</h1>
 <p class="text-[13px] text-app-textSubtle leading-relaxed max-w-[420px] mb-8 font-normal">Quel modèle, quelle précision, quel matériel : obtenez une estimation immédiate.</p>
 {% if erreur %}
 <div class="mb-4 w-full px-3.5 py-3 rounded-xl bg-red-950/40 border border-red-800/60 text-[12.5px] text-red-300 leading-relaxed text-left">{{ erreur }}</div>
 {% endif %}
 <form class="w-full flex flex-col items-center" method="get" action="{{ url_for('dashboard') }}">
-<div class="chatbar metal-ring group relative z-20 w-full max-w-[700px] rounded-[24px] p-4 bg-neutral-900 transition-[max-width,padding] duration-500 ease-[cubic-bezier(.22,1,.36,1)]" id="chatbar" style="max-width:700px">
+<div class="chatbar metal-ring group relative z-20 w-full max-w-[700px] rounded-[24px] p-4 bg-neutral-900 transition-[max-width,height,padding,border-radius] duration-[650ms] ease-[var(--spring)]" id="chatbar" style="max-width:700px; view-transition-name: hero-morph">
+<div class="chatbar-face" id="chatbar-face">
 <div aria-hidden="true" class="pointer-events-none absolute inset-0 rounded-[26px] opacity-[0.05] mix-blend-overlay" style="background-image:url('{{ url_for('static', filename='img/grain.svg') }}'); background-size: 220px 220px;"></div>
 <div class="relative">
-<input autocomplete="off" class="w-full bg-transparent text-center text-[16.5px] text-white placeholder-white/30 px-3 py-3.5 outline-none focus:outline-none focus-visible:outline-none border-0 focus:ring-0 focus:shadow-none transition-[padding] duration-500 ease-[cubic-bezier(.22,1,.36,1)]" id="model-search" placeholder="Rechercher un modèle (Llama, Mistral, Gemma...)" style="outline:none; box-shadow:none;" type="text">
+<input autocomplete="off" class="w-full bg-transparent text-center text-[16.5px] text-white placeholder-white/50 px-3 py-3.5 outline-none focus:outline-none focus-visible:outline-none border-0 focus:ring-0 focus:shadow-none transition-[padding] duration-500 ease-[cubic-bezier(.22,1,.36,1)]" id="model-search" placeholder="Rechercher un modèle (Llama, Mistral, Gemma...)" style="outline:none; box-shadow:none;" type="text">
 <div class="hidden absolute z-20 mt-1 w-full bg-[#0a0a0c]/95 backdrop-blur-xl backdrop-saturate-150 border border-white/10 rounded-2xl shadow-xl max-h-64 overflow-y-auto text-left" id="model-suggestions"></div>
 </div>
 <input id="model-id" name="modele" type="hidden">
@@ -159,7 +174,7 @@ Historique
 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><line x1="12" x2="12" y1="5" y2="19" stroke-linecap="round"></line><line x1="5" x2="19" y1="12" y2="12" stroke-linecap="round"></line></svg>
 </button>
 <div class="hidden absolute z-30 bottom-full mb-2 left-0 w-64 bg-[#0b0c0e]/95 backdrop-blur-xl backdrop-saturate-150 border border-white/10 rounded-2xl shadow-2xl p-3" id="familles-popover">
-<div class="mb-2.5 text-[10px] uppercase font-mono tracking-wider text-white/40">Modèles connus</div>
+<div class="mb-2.5 text-[10px] uppercase font-mono tracking-wider text-white/55">Modèles connus</div>
 <div class="grid grid-cols-5 gap-1">
 {% for f in familles %}
 <button class="famille-btn group relative flex flex-col items-center justify-center gap-1.5 rounded-xl py-2 hover:bg-white/5 transition-colors" data-recherche="{{ f.recherche }}" type="button">
@@ -174,17 +189,17 @@ Historique
 Ajouter votre matériel
 </button>
 <div class="hidden mt-2 grid grid-cols-2 gap-2" id="plateforme-custom-fields">
-<input class="col-span-2 h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12px] text-white px-3 placeholder-white/30 focus:outline-none focus:border-neutral-500 transition-colors" id="plateforme-custom-nom" name="plateforme_custom_nom" placeholder="Nom de la plateforme" type="text">
-<input class="h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12px] text-white px-3 placeholder-white/30 focus:outline-none focus:border-neutral-500 transition-colors" name="plateforme_custom_mem" placeholder="Mémoire (GB)" type="text">
-<input class="h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12px] text-white px-3 placeholder-white/30 focus:outline-none focus:border-neutral-500 transition-colors" name="plateforme_custom_watts" placeholder="Puissance (W)" type="text">
+<input class="col-span-2 h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12px] text-white px-3 placeholder-white/50 focus:outline-none focus:border-neutral-500 transition-colors" id="plateforme-custom-nom" name="plateforme_custom_nom" placeholder="Nom de la plateforme" type="text">
+<input class="h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12px] text-white px-3 placeholder-white/50 focus:outline-none focus:border-neutral-500 transition-colors" name="plateforme_custom_mem" placeholder="Mémoire (GB)" type="text">
+<input class="h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12px] text-white px-3 placeholder-white/50 focus:outline-none focus:border-neutral-500 transition-colors" name="plateforme_custom_watts" placeholder="Puissance (W)" type="text">
 <label class="col-span-2 flex items-center gap-2 text-[11px] text-white/50 mt-0.5">
 <input id="plateforme-custom-embarque" name="plateforme_custom_embarque" type="checkbox" value="oui">
 Carte embarquée, sur batterie
 </label>
 </div>
 <div class="pt-2" id="batterie-field" style="display:none">
-<label class="block text-[10px] uppercase font-mono tracking-wider text-white/40 mb-1.5" for="batterie-input">Capacité Batterie (mAh)</label>
-<input class="w-full h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12.5px] text-white px-3 placeholder-white/30 focus:outline-none focus:border-neutral-500 transition-colors" id="batterie-input" name="batterie_mah" placeholder="ex: 5000" type="text">
+<label class="block text-[10px] uppercase font-mono tracking-wider text-white/55 mb-1.5" for="batterie-input">Capacité Batterie (mAh)</label>
+<input class="w-full h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12.5px] text-white px-3 placeholder-white/50 focus:outline-none focus:border-neutral-500 transition-colors" id="batterie-input" name="batterie_mah" placeholder="ex: 5000" type="text">
 </div>
 </div>
 </div>
@@ -192,13 +207,13 @@ Carte embarquée, sur batterie
 <div class="relative">
 <button class="inline-flex items-center gap-1.5 h-9 pl-3 pr-2.5 rounded-full bg-white/5 hover:bg-white/10 text-[13px] font-medium text-white/85 hover:text-white transition-colors" id="contexte-dropdown-btn" type="button">
 <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect height="6" rx="1.5" width="18" x="3" y="3"></rect><rect height="6" rx="1.5" width="18" x="3" y="15"></rect></svg>
-<span class="text-white/40 font-normal">Contexte</span>
+<span class="hidden sm:inline text-white/55 font-normal">Contexte</span>
 <span id="contexte-dropdown-label">8K</span>
 <svg class="h-3 w-3 text-white/50 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
 </button>
 <div class="hidden absolute z-30 top-full mt-2 left-0 w-52 bg-[#0b0c0e]/95 backdrop-blur-xl backdrop-saturate-150 border border-white/10 rounded-2xl shadow-2xl p-3" id="contexte-dropdown-list">
 <div class="flex items-center justify-between mb-2.5">
-<span class="text-[10px] uppercase font-mono tracking-wider text-white/40">Contexte</span>
+<span class="text-[10px] uppercase font-mono tracking-wider text-white/55">Contexte</span>
 <span class="text-[11px] font-semibold text-white" id="contexte-slider-label">8K tokens</span>
 </div>
 <div class="relative h-[30px]" id="contexte-slider" tabindex="0" role="slider" aria-valuemin="0" aria-valuemax="4" aria-label="Longueur de contexte">
@@ -224,7 +239,7 @@ Carte embarquée, sur batterie
 <div class="relative">
 <button class="precision-btn inline-flex items-center gap-1.5 h-9 pl-3 pr-2.5 rounded-full bg-white/5 hover:bg-white/10 text-[13px] font-medium text-white/85 hover:text-white transition-colors" id="precision-dropdown-btn" type="button">
 <svg class="h-3.5 w-3.5 shrink-0" id="precision-icone" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"></svg>
-<span class="text-white/40 font-normal">Précision</span>
+<span class="text-white/55 font-normal">Précision</span>
 <span id="precision-dropdown-label">Élevé</span>
 <svg class="h-3 w-3 text-white/50 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
 </button>
@@ -237,7 +252,7 @@ Carte embarquée, sur batterie
 <span class="min-w-0 flex-1">
 <span class="flex items-center gap-1.5">
 <span class="text-[12.5px] font-semibold text-white">{{ niveau.nom }}</span>
-<span class="text-[10.5px] font-mono text-white/40">{{ niveau.precision }}</span>
+<span class="text-[10.5px] font-mono text-white/55">{{ niveau.precision }}</span>
 <svg class="precision-check h-3 w-3 text-blue-400 ml-auto hidden" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
 </span>
 <span class="mt-0.5 block text-[11px] leading-snug text-white/45">{{ niveau.blurb }}</span>
@@ -258,6 +273,15 @@ Carte embarquée, sur batterie
 <input id="precision-value" name="precision" type="hidden" value="FP16">
 <input id="context-value" name="contexte" type="hidden" value="8192">
 </div>
+<div aria-hidden="true" class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2.5 opacity-0" id="recherche-orb">
+<canvas class="block" height="220" id="recherche-orb-canvas" style="width:100px; height:100px;" width="220"></canvas>
+<span class="flex items-center gap-1.5 text-[10.5px] font-mono uppercase tracking-[2px] text-white/55">
+<span id="recherche-orb-label">Analyse</span>
+<span class="inline-flex gap-[3px]" id="recherche-orb-dots"><i></i><i></i><i></i></span>
+</span>
+</div>
+</div>
+<div class="w-full flex flex-col items-center" id="post-chatbar">
 <div class="flex flex-wrap justify-center gap-2 mt-4">
 {% for t in taches %}
 <button class="tache-btn inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-white/10 bg-white/[0.03] text-[12.5px] text-app-textMuted hover:text-white hover:border-white/20 hover:bg-white/[0.07] transition-colors" data-active="false" data-tache="{{ t.valeur }}" type="button">
@@ -275,7 +299,7 @@ Carte embarquée, sur batterie
 <span class="flex-1 truncate text-left text-app-textMuted" id="plateforme-dropdown-label">Choisir une plateforme</span>
 <svg class="h-3.5 w-3.5 text-neutral-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
 </button><div class="absolute z-20 w-full bg-[#0b0c0e]/95 backdrop-blur-xl backdrop-saturate-150 border border-white/10 rounded-2xl shadow-2xl max-h-72 overflow-y-auto p-1.5 origin-top opacity-0 scale-95 -translate-y-1 pointer-events-none transition-[opacity,transform] duration-200 ease-out" id="plateforme-dropdown-list">
-<div class="px-2 pt-1.5 pb-1 text-[10px] uppercase font-mono tracking-wider text-white/40">GPU datacenter</div>
+<div class="px-2 pt-1.5 pb-1 text-[10px] uppercase font-mono tracking-wider text-white/55">GPU datacenter</div>
 {% for p in plateformes if not p.unified_memory %}
 <button class="plateforme-option group/opt relative w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-left hover:bg-white/[0.06] transition-colors" data-embarque="non" data-image="{{ url_for('static', filename='img/hf/' + p.image) }}" data-label="{{ p.name }} ({{ p.memory_gb }} GB)" data-name="{{ p.name }}" type="button">
 <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/[0.06] ring-1 ring-white/10 group-hover/opt:ring-white/20 transition-all overflow-hidden">
@@ -283,13 +307,13 @@ Carte embarquée, sur batterie
 </span>
 <span class="flex-1 min-w-0">
 <span class="block truncate text-[13px] text-white">{{ p.name.rsplit(' ', 1)[0] }}</span>
-<span class="block text-[10.5px] text-white/40">{{ p.memory_type }} · {{ p.power_watts|int }} W</span>
+<span class="block text-[10.5px] text-white/55">{{ p.memory_type }} · {{ p.power_watts|int }} W</span>
 </span>
 <span class="text-[11px] font-mono text-white/45 shrink-0">{{ p.memory_gb|int }} GB</span>
 <svg class="plateforme-check h-3.5 w-3.5 text-blue-400 shrink-0 hidden" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
 </button>
 {% endfor %}
-<div class="px-2 pt-2.5 pb-1 text-[10px] uppercase font-mono tracking-wider text-white/40 border-t border-white/10 mt-1">Cartes embarquées</div>
+<div class="px-2 pt-2.5 pb-1 text-[10px] uppercase font-mono tracking-wider text-white/55 border-t border-white/10 mt-1">Cartes embarquées</div>
 {% for p in plateformes if p.unified_memory %}
 <button class="plateforme-option group/opt relative w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-left hover:bg-white/[0.06] transition-colors" data-embarque="oui" data-image="{{ url_for('static', filename='img/hf/' + p.image) }}" data-label="{{ p.name }} ({{ p.memory_gb }} GB)" data-name="{{ p.name }}" type="button">
 <span class="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/[0.06] ring-1 ring-white/10 group-hover/opt:ring-white/20 transition-all overflow-hidden">
@@ -297,7 +321,7 @@ Carte embarquée, sur batterie
 </span>
 <span class="flex-1 min-w-0">
 <span class="block truncate text-[13px] text-white">{{ p.name.rsplit(' ', 1)[0] }}</span>
-<span class="block text-[10.5px] text-white/40">{{ p.memory_type }} · {{ p.power_watts|int }} W</span>
+<span class="block text-[10.5px] text-white/55">{{ p.memory_type }} · {{ p.power_watts|int }} W</span>
 </span>
 <span class="text-[11px] font-mono text-white/45 shrink-0">{{ p.memory_gb|int }} GB</span>
 <svg class="plateforme-check h-3.5 w-3.5 text-blue-400 shrink-0 hidden" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -316,7 +340,7 @@ Carte embarquée, sur batterie
 </div>
 <div class="hidden mt-2" id="batterie-builtin-field">
 <label class="block text-[10px] uppercase font-mono tracking-wider text-app-textMuted mb-1.5" for="batterie-builtin-input">Capacité Batterie (mAh)</label>
-<input class="w-full h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12.5px] text-app-textPrimary px-3 placeholder-white/30 focus:outline-none focus:border-neutral-500 transition-colors" id="batterie-builtin-input" name="batterie_mah" placeholder="ex: 5000" type="text">
+<input class="w-full h-9 bg-white/[0.04] backdrop-blur-md border border-white/10 rounded-xl text-[12.5px] text-app-textPrimary px-3 placeholder-white/50 focus:outline-none focus:border-neutral-500 transition-colors" id="batterie-builtin-input" name="batterie_mah" placeholder="ex: 5000" type="text">
 </div>
 </div>
 </div>
@@ -330,9 +354,29 @@ Carte embarquée, sur batterie
 <a class="text-[12px] text-neutral-500 hover:text-app-textMuted transition-colors inline-block" href="{{ url_for('historique') }}">Historique des estimations →</a>
 </div>
 </div>
+</div>
 </form>
 </div>
 </main>
+<script type="module">
+  import { initAnimatedGradient } from "{{ url_for('static', filename='js/animated-gradient.js') }}";
+  initAnimatedGradient(document.getElementById('gradient-bg'), {
+    color1: '#050505',
+    color2: '#4f6bed4d',
+    color3: '#8b5cf63d',
+    rotation: -50,
+    proportion: 35,
+    scale: 0.012,
+    speed: 5,
+    distortion: 6,
+    swirl: 55,
+    swirlIterations: 16,
+    softness: 95,
+    offset: 0,
+    shape: 'checks',
+    shapeSize: 45,
+  });
+</script>
 <script>
   const plateformeValue = document.getElementById('plateforme-value');
   const plateformeBtn = document.getElementById('plateforme-dropdown-btn');
@@ -843,16 +887,297 @@ Carte embarquée, sur batterie
     }
   });
 
+  // ───────────────────────── orbe de réflexion (sphère de points) ─────────────────────────
+  // moteur canvas repris du composant de référence fourni par Yassine (sphère de points
+  // avec rotation 3D + "programmes de lumière" qui parcourent les points), adapté en JS
+  // simple (pas de React) et avec des durées raccourcies : ici il n'y a pas de vraie
+  // latence réseau à mimer, le calcul est instantané, donc pas besoin des ~6s de l'original.
+  const TAU = Math.PI * 2;
+  const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const lerp = (a, b, t) => a + (b - a) * t;
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0;
+      a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function cubicBezier(x1, y1, x2, y2) {
+    const cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    const cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    const sx = (t) => ((ax * t + bx) * t + cx) * t;
+    const sy = (t) => ((ay * t + by) * t + cy) * t;
+    const dx = (t) => (3 * ax * t + 2 * bx) * t + cx;
+    const solve = (x) => {
+      let t = x;
+      for (let i = 0; i < 8; i++) {
+        const e = sx(t) - x;
+        if (Math.abs(e) < 1e-6) return t;
+        const d = dx(t);
+        if (Math.abs(d) < 1e-6) break;
+        t -= e / d;
+      }
+      let lo = 0, hi = 1;
+      t = x;
+      for (let i = 0; i < 40; i++) {
+        const e = sx(t);
+        if (Math.abs(e - x) < 1e-6) break;
+        if (x > e) lo = t; else hi = t;
+        t = (hi - lo) / 2 + lo;
+      }
+      return t;
+    };
+    return (x) => (x <= 0 ? 0 : x >= 1 ? 1 : sy(solve(x)));
+  }
+
+  const E = {
+    out: cubicBezier(0.22, 1, 0.36, 1),
+    io: cubicBezier(0.65, 0, 0.35, 1),
+  };
+
+  // sphère de points (mêmes anneaux de latitude que l'original)
+  const RINGS = 16;
+  const DOT_LIST = (() => {
+    const rand = mulberry32(7);
+    const out = [];
+    for (let k = 0; k < RINGS; k++) {
+      const y = 1 - ((k + 0.5) / RINGS) * 2;
+      const r = Math.sqrt(1 - y * y);
+      const m = Math.max(4, Math.round(30 * r));
+      for (let j = 0; j < m; j++) {
+        const a = (j / m) * TAU + k * 0.35;
+        out.push({ x: Math.cos(a) * r, y, z: Math.sin(a) * r, u: (1 - y) / 2, seed: rand() * 6.283 });
+      }
+    }
+    return out;
+  })();
+  const N = DOT_LIST.length;
+  const DX = Float32Array.from(DOT_LIST, (d) => d.x);
+  const DY = Float32Array.from(DOT_LIST, (d) => d.y);
+  const DZ = Float32Array.from(DOT_LIST, (d) => d.z);
+  const DU = Float32Array.from(DOT_LIST, (d) => d.u);
+  const DS = Float32Array.from(DOT_LIST, (d) => d.seed);
+
+  const G_STEPS = 24, A_STEPS = 48;
+  const ORB_COLORS = (() => {
+    const out = [];
+    for (let gi = 0; gi <= G_STEPS; gi++) {
+      const g = gi / G_STEPS;
+      const r = Math.round(lerp(235, 91, g)), gg = Math.round(lerp(235, 141, g)), b = Math.round(lerp(235, 239, g));
+      for (let ai = 0; ai <= A_STEPS; ai++) out.push(`rgba(${r},${gg},${b},${(ai / A_STEPS).toFixed(3)})`);
+    }
+    return out;
+  })();
+
+  function creerOrbe(canvas) {
+    const CANVAS = 220, ORB_R = 66;
+    const P = { k: 0, alpha: 0, spin: 0, rot: 0, sweep: 0, pop: 1, gain: 1, floor: 0, prog: 0 };
+    const ctx = canvas.getContext('2d');
+    const lit = new Float32Array(N);
+    const SX = new Float32Array(N), SY = new Float32Array(N), SR = new Float32Array(N), SD = new Float32Array(N);
+    const SC = new Int16Array(N);
+    const pw = [1, 0, 0, 0];
+    let time = 0, raf = 0, last = 0;
+
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(CANVAS * dpr);
+    canvas.height = Math.round(CANVAS * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const S = 0.6, CP = Math.cos(0.35), SP = Math.sin(0.35), C0 = CANVAS / 2;
+
+    function draw(dt) {
+      ctx.clearRect(0, 0, CANVAS, CANVAS);
+      time += dt;
+      P.rot += P.spin * dt;
+      const cyw = Math.cos(P.rot), syw = Math.sin(P.rot);
+      const stepW = dt / 0.35;
+      for (let q = 0; q < 4; q++) {
+        const d = (q === P.prog ? 1 : 0) - pw[q];
+        pw[q] += Math.abs(d) <= stepW ? d : d > 0 ? stepW : -stepW;
+      }
+      const decay = Math.exp(-dt / 0.5);
+      const h0 = (time * 300) % N;
+      const a1 = time * 0.8, b1 = Math.sin(time * 0.5) * 0.9;
+      const f1x = Math.cos(b1) * Math.cos(a1), f1y = Math.sin(b1), f1z = Math.cos(b1) * Math.sin(a1);
+      const lat = Math.sin(time * 2.2);
+
+      for (let n = 0; n < N; n++) {
+        const dx = DX[n], dy = DY[n], dz = DZ[n], u = DU[n];
+        let pulse = 0;
+        if (pw[0] > 0.001) {
+          let dd = Math.abs(n - h0); if (dd > N - dd) dd = N - dd;
+          const v = Math.max(0, 1 - dd / 16);
+          pulse = Math.max(pulse, v * v * pw[0]);
+        }
+        if (pw[1] > 0.001) {
+          const v = Math.max(0, (dx * f1x + dy * f1y + dz * f1z - 0.72) / 0.28);
+          pulse = Math.max(pulse, v * v * pw[1]);
+        }
+        if (pw[2] > 0.001) {
+          const e = dy - lat;
+          const v = Math.max(0, 1 - (e * e) / 0.02);
+          pulse = Math.max(pulse, v * v * pw[2]);
+        }
+        if (pw[3] > 0.001) {
+          let dd = Math.abs(n - (N - h0)); if (dd > N - dd) dd = N - dd;
+          const v = Math.max(0, 1 - dd / 22);
+          pulse = Math.max(pulse, v * v * pw[3]);
+        }
+        const l = Math.max(lit[n] * decay, pulse * P.gain);
+        lit[n] = l;
+
+        const ki = clamp01(P.k * (1 + S) - S * u);
+        if (ki <= 0.001) { SC[n] = -1; continue; }
+        const eo = E.out(ki), kk = eo * P.pop;
+
+        const x1 = dx * cyw + dz * syw, z1 = -dx * syw + dz * cyw;
+        const y2 = dy * CP - z1 * SP, z2 = dy * SP + z1 * CP;
+        const f = 2.8 / (2.8 - z2), depth = (z2 + 1) / 2;
+        const ox = x1 * ORB_R * kk * f, oy = -y2 * ORB_R * kk * f;
+
+        const g = clamp01((P.sweep * 1.4 - u) / 0.4);
+        let a = 0.1 + 0.035 * Math.sin(DS[n] + time * 1.6) * (1 - g) + 0.32 * depth * depth + 0.75 * l * (1 - g) + g * (0.55 + 0.4 * depth) + 2 * g * (1 - g);
+        a = Math.max(a, P.floor * (0.7 + 0.3 * depth));
+        if (a > 1) a = 1;
+        a *= eo * P.alpha;
+
+        SX[n] = C0 + ox;
+        SY[n] = C0 + oy;
+        SD[n] = depth;
+        SR[n] = (1.15 * (0.45 + 0.75 * depth) * f + 0.9 * l) * (0.4 + 0.6 * eo);
+        const ai = Math.round(a * A_STEPS), gi = Math.round(g * G_STEPS);
+        SC[n] = ai <= 0 ? -1 : gi * (A_STEPS + 1) + ai;
+      }
+
+      for (let pass = 0; pass < 2; pass++) {
+        for (let n = 0; n < N; n++) {
+          const c = SC[n];
+          if (c < 0) continue;
+          if ((SD[n] >= 0.5) !== (pass === 1)) continue;
+          ctx.fillStyle = ORB_COLORS[c];
+          ctx.beginPath();
+          ctx.arc(SX[n], SY[n], SR[n], 0, TAU);
+          ctx.fill();
+        }
+      }
+    }
+
+    function frame(now) {
+      raf = 0;
+      const dt = Math.max(0, Math.min(0.05, (now - last) / 1000));
+      last = now;
+      draw(dt);
+      if (P.alpha > 0.002) raf = requestAnimationFrame(frame);
+      else ctx.clearRect(0, 0, CANVAS, CANVAS);
+    }
+    function ensure() {
+      if (raf || P.alpha <= 0.002) return;
+      last = performance.now();
+      raf = requestAnimationFrame(frame);
+    }
+    return { P, ensure };
+  }
+
+  // petit moteur de timeline (repris du composant de référence, simplifié : pas besoin
+  // du système multi-canaux ni de l'annulation, on ne pilote que les paramètres de l'orbe)
+  function jouerPistes(orb, pistes) {
+    return new Promise((resolve) => {
+      const fin = pistes.reduce((m, p) => Math.max(m, p.t1), 0);
+      let raf = 0, t = 0, dernier = performance.now();
+      function etape(maintenant) {
+        const dt = Math.max(0, Math.min(100, maintenant - dernier));
+        dernier = maintenant;
+        t += dt;
+        for (const p of pistes) {
+          if (t < p.t0) continue;
+          const prog = Math.min(1, (t - p.t0) / Math.max(1, p.t1 - p.t0));
+          const v = p.from + (p.to - p.from) * (p.ease || E.io)(prog);
+          orb.P[p.ch] = v;
+          if (p.ch === 'alpha') orb.ensure();
+        }
+        if (t >= fin) resolve(); else raf = requestAnimationFrame(etape);
+      }
+      raf = requestAnimationFrame(etape);
+    });
+  }
+  const piste = (ch, from, to, t0, t1, ease) => ({ ch, from, to, t0, t1, ease });
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  const PISTES_ASSEMBLAGE = [
+    piste('k', 0, 1, 0, 480, E.out),
+    piste('alpha', 0, 1, 0, 480, E.out),
+    piste('spin', 0, 0.9, 0, 480, E.out),
+    piste('pop', 1, 1.05, 0, 260, E.out),
+    piste('pop', 1.05, 1, 260, 480, E.io),
+  ];
+  const PISTES_RESOLUTION = [
+    piste('sweep', 0, 1, 0, 420, E.io),
+    piste('spin', 0.9, 0.25, 0, 420, E.out),
+    piste('gain', 1, 0, 0, 420, E.out),
+    piste('floor', 0, 0.95, 220, 500, E.out),
+    piste('pop', 1, 1.04, 340, 440, E.out),
+    piste('pop', 1.04, 1, 440, 500, E.out),
+  ];
+  const PISTES_DISPARITION = [piste('alpha', 1, 0, 0, 260, E.out)];
+
+  const PHRASES_ORB = ['Analyse', 'Recherche', 'Calcul', 'Préparation'];
+
+  async function lancerTransitionRecherche(form) {
+    const chatbar = document.getElementById('chatbar');
+    const postChatbar = document.getElementById('post-chatbar');
+    const orbCompagnon = document.getElementById('orb-compagnon');
+    const orbLabel = document.getElementById('recherche-orb-label');
+    const canvas = document.getElementById('recherche-orb-canvas');
+    const url = form.action + '?' + new URLSearchParams(new FormData(form)).toString();
+    const reduit = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduit) { window.location.href = url; return; }
+
+    // on lance la vraie requête tout de suite, en parallèle de l'animation (elle sera
+    // alors servie depuis le cache au moment de la navigation réelle) : l'animation ne
+    // doit pas ajouter du temps d'attente en plus du chargement de la page, les deux
+    // se déroulent en même temps
+    fetch(url, { credentials: 'same-origin', headers: { 'X-Precharge': '1' } }).catch(() => {});
+
+    chatbar.classList.add('is-launching');
+    postChatbar.classList.add('is-launching');
+    orbCompagnon.classList.add('is-launching');
+
+    const orb = creerOrbe(canvas);
+    await sleep(140);
+    await jouerPistes(orb, PISTES_ASSEMBLAGE);
+
+    for (let i = 0; i < 3; i++) {
+      orb.P.prog = i % 4;
+      orbLabel.style.opacity = '0';
+      await sleep(70);
+      orbLabel.textContent = PHRASES_ORB[i % PHRASES_ORB.length];
+      orbLabel.style.opacity = '1';
+      await sleep(640);
+    }
+
+    await jouerPistes(orb, PISTES_RESOLUTION);
+    await jouerPistes(orb, PISTES_DISPARITION);
+    window.location.href = url;
+  }
+
   document.querySelector('form').addEventListener('submit', (e) => {
+    e.preventDefault();
     if (!modelId.value) {
-      if (!modelSearch.value.trim()) { e.preventDefault(); return; }
+      if (!modelSearch.value.trim()) { return; }
       modelId.value = modelSearch.value.trim();
     }
     const nomCustom = document.getElementById('plateforme-custom-nom');
     if (!plateformeValue.value && !nomCustom.value.trim()) {
-      e.preventDefault();
       plateformeBtn.click();
+      return;
     }
+    lancerTransitionRecherche(e.target);
   });
 
 </script>

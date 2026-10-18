@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="dark h-full" lang="fr"><head>
+<!DOCTYPE html><html class="min-h-screen bg-[#050505]" lang="fr"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
 <title>LLM Memory Estimator — Historique des estimations</title>
@@ -8,13 +8,29 @@
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script>
     tailwind.config = {
-      darkMode: 'class',
-      theme: { extend: { colors: { obsidian: { 950: '#04060a', 900: '#07090e', 850: '#0b0f17', 800: '#0f1722', 700: '#151e2d' } },
-        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } }
+      theme: {
+        extend: {
+          colors: {
+            app: {
+              bg: '#050505',
+              surface: '#090A0B',
+              input: '#0D0E10',
+              border: 'rgba(255, 255, 255, 0.08)',
+              borderActive: 'rgba(255, 255, 255, 0.16)',
+              textPrimary: '#F2F2F2',
+              textMuted: '#7F858D',
+              textSubtle: '#808080',
+            }
+          },
+          fontFamily: {
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+          }
+        }
+      }
     }
   </script>
 <style data-purpose="custom-layout-and-glow">
-    .card-active-glow { box-shadow: 0 0 0 1px #0284c7, 0 8px 24px -4px rgba(2, 132, 199, 0.15); }
     @keyframes mascot-blob {
       0%, 100% { border-radius: 58% 42% 55% 45% / 52% 58% 42% 48%; }
       33% { border-radius: 45% 55% 48% 52% / 58% 44% 56% 42%; }
@@ -34,96 +50,102 @@
     .mascot-float { display: inline-flex; animation: mascot-float 3.4s ease-in-out infinite; }
   </style>
 </head>
-<body class="bg-obsidian-950 text-slate-200 min-h-screen flex flex-col font-sans selection:bg-sky-500 selection:text-white relative overflow-x-hidden">
-<div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
-<div class="absolute -top-32 right-[-10%] w-[780px] h-[780px] rounded-full" style="background:#4f6bed; opacity:0.24; filter: blur(130px);"></div>
-<div class="absolute top-[18%] right-[-4%] w-[600px] h-[600px] rounded-full" style="background:#8b5cf6; opacity:0.16; filter: blur(120px);"></div>
-<div class="absolute bottom-[-12%] right-[6%] w-[560px] h-[560px] rounded-full" style="background:#22d3ee; opacity:0.14; filter: blur(110px);"></div>
+<body class="min-h-screen bg-[#050505] text-app-textPrimary font-sans antialiased selection:bg-neutral-800 selection:text-white relative overflow-x-hidden">
+<div class="fixed inset-0 overflow-hidden pointer-events-none select-none z-0">
+<canvas class="absolute inset-0 w-full h-full" id="gradient-bg"></canvas>
 <div class="absolute inset-0" style="background-image:url('{{ url_for('static', filename='img/grain.svg') }}'); background-size: 220px 220px; opacity:0.045; mix-blend-mode: overlay;"></div>
 </div>
-<header class="w-full border-b border-slate-800/60 bg-obsidian-950/80 backdrop-blur-md sticky top-0 z-50">
-<div class="max-w-[1536px] mx-auto px-6 lg:px-12 h-16 flex items-center justify-between">
-<div class="flex items-center space-x-3">
-<a class="flex items-center space-x-3 group" href="{{ url_for('index') }}">
-<span class="mascot-float">
-<span aria-hidden="true" class="mascot inline-flex shrink-0 items-center justify-center w-7 h-7 bg-gradient-to-br from-[#5b8def] to-[#8b5cf6]">
+<div class="sticky top-0 z-30 w-full px-4 pt-4 pointer-events-none">
+<header class="pointer-events-auto relative mx-auto max-w-[920px] h-[52px] rounded-full border border-white/10 bg-white/[0.045] backdrop-blur-2xl backdrop-saturate-150 shadow-[0_8px_30px_-8px_rgba(0,0,0,0.6)] px-3 pl-4 flex items-center justify-between overflow-hidden">
+<div aria-hidden="true" class="pointer-events-none absolute -top-12 left-16 w-28 h-28 rounded-full bg-gradient-to-br from-[#5b8def]/40 to-transparent blur-2xl"></div>
+<div aria-hidden="true" class="pointer-events-none absolute -bottom-14 right-24 w-32 h-32 rounded-full bg-gradient-to-br from-[#8b5cf6]/30 to-transparent blur-2xl"></div>
+<a class="relative z-10 flex items-center gap-2.5 group" href="{{ url_for('index') }}">
+<span class="mascot-float relative inline-flex">
+<span aria-hidden="true" class="absolute inset-0 rounded-full blur-md opacity-70 bg-gradient-to-br from-[#5b8def] to-[#8b5cf6] group-hover:opacity-100 transition-opacity"></span>
+<span aria-hidden="true" class="mascot relative inline-flex shrink-0 items-center justify-center w-7 h-7 bg-gradient-to-br from-[#5b8def] to-[#8b5cf6] shadow-lg shadow-black/40">
 <span class="flex gap-[3px] translate-x-[2px] translate-y-[1.5px]">
-<span class="mascot-eye block w-[2.5px] h-[7px] rounded-[3px] bg-obsidian-950"></span>
-<span class="mascot-eye block w-[2.5px] h-[7px] rounded-[3px] bg-obsidian-950"></span>
+<span class="mascot-eye block w-[2.5px] h-[7px] rounded-[3px] bg-[#050505]"></span>
+<span class="mascot-eye block w-[2.5px] h-[7px] rounded-[3px] bg-[#050505]"></span>
 </span>
 </span>
 </span>
-<span class="font-semibold text-white tracking-tight text-sm md:text-base">LLM Memory Estimator</span>
+<span class="text-[14px] font-semibold tracking-tight text-[#F2F2F2] group-hover:text-white transition-colors">LLM Memory Estimator</span>
+<span class="text-app-textSubtle">›</span>
+<span class="text-[13px] text-app-textMuted">Historique</span>
 </a>
-<span class="text-slate-500 text-sm font-normal">›</span>
-<span class="text-slate-400 text-sm">Historique des estimations</span>
-</div>
-<span class="px-2.5 py-0.5 rounded-md text-xs font-mono text-slate-400 border border-slate-800 bg-obsidian-900">v1.0.0</span>
-</div>
+<nav aria-label="Navigation secondaire" class="relative z-10 flex items-center gap-2 text-[13px] text-app-textMuted font-normal">
+<a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04] hover:bg-white/10 hover:text-app-textPrimary hover:border-white/20 transition-colors" href="{{ url_for('index') }}">
+<svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+Accueil
+</a>
+</nav>
 </header>
-<main class="flex-1 max-w-[1536px] w-full mx-auto px-6 lg:px-12 pt-8 pb-16 flex flex-col justify-start relative z-10">
+</div>
+<main class="flex-1 max-w-[1536px] w-full mx-auto px-6 lg:px-12 pt-10 pb-16 flex flex-col justify-start relative z-10">
 <div class="mb-5">
-<a class="inline-flex items-center text-xs font-medium text-slate-400 hover:text-white transition-colors group" href="{{ url_for('index') }}">
+<a class="inline-flex items-center text-xs font-medium text-app-textMuted hover:text-app-textPrimary transition-colors group" href="{{ url_for('index') }}">
 <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="19" x2="5" y1="12" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
 Retour
 </a>
 </div>
 <section class="mb-8">
 <h1 class="text-3xl lg:text-4xl font-extrabold text-white tracking-tight mb-2.5">Historique des estimations</h1>
-<p class="text-slate-400 text-sm max-w-2xl leading-relaxed">Retrouvez ici toutes vos estimations de <span class="text-slate-200">mémoire</span> et accédez rapidement aux détails ou relancez une configuration.</p>
+<p class="text-app-textMuted text-sm max-w-2xl leading-relaxed">Retrouvez ici toutes vos estimations de <span class="text-app-textPrimary">mémoire</span> et accédez rapidement aux détails ou relancez une configuration.</p>
 </section>
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-<aside class="lg:col-span-3 bg-obsidian-900/90 border border-slate-800/80 rounded-2xl p-5 shadow-xl space-y-6">
+<aside class="lg:col-span-3 lg:sticky lg:top-[84px] bg-white/[0.03] border border-white/10 rounded-2xl p-5 backdrop-blur-md space-y-6">
 <div>
-<div class="text-xs uppercase font-semibold tracking-wider text-slate-400 mb-3">Rechercher</div>
-<input class="w-full bg-obsidian-950 border border-slate-800 text-slate-200 text-sm rounded-xl px-3.5 py-2.5 placeholder-slate-500 focus:outline-none focus:border-sky-600" id="filtre-recherche" placeholder="Modèle ou plateforme..." type="text">
+<div class="text-xs uppercase font-semibold tracking-wider text-app-textMuted mb-3">Rechercher</div>
+<input class="w-full bg-white/[0.04] backdrop-blur-md border border-white/10 text-app-textPrimary text-sm rounded-xl px-3.5 py-2.5 placeholder-app-textSubtle focus:outline-none focus:border-white/25" id="filtre-recherche" placeholder="Modèle ou plateforme..." type="text">
 </div>
 <div>
-<div class="text-xs uppercase font-semibold tracking-wider text-slate-400 mb-3">Statut</div>
+<div class="text-xs uppercase font-semibold tracking-wider text-app-textMuted mb-3">Statut</div>
 <div class="space-y-2">
-<label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer"><input checked class="filtre-statut accent-sky-500" type="checkbox" value="compatible">Compatible</label>
-<label class="flex items-center gap-2 text-sm text-slate-300 cursor-pointer"><input checked class="filtre-statut accent-sky-500" type="checkbox" value="non_compatible">Non compatible</label>
+<label class="flex items-center gap-2 text-sm text-app-textPrimary cursor-pointer"><input checked class="filtre-statut accent-[#5b8def]" type="checkbox" value="compatible">Compatible</label>
+<label class="flex items-center gap-2 text-sm text-app-textPrimary cursor-pointer"><input checked class="filtre-statut accent-[#5b8def]" type="checkbox" value="non_compatible">Non compatible</label>
 </div>
 </div>
 <div>
-<div class="text-xs uppercase font-semibold tracking-wider text-slate-400 mb-3">Précision</div>
+<div class="text-xs uppercase font-semibold tracking-wider text-app-textMuted mb-3">Précision</div>
 <div class="flex flex-wrap gap-1.5">
 {% for p in precisions %}
-<button class="filtre-precision-btn px-2.5 py-1 rounded-full border border-slate-700 text-[11.5px] text-slate-300 hover:border-sky-500 transition-colors" data-active="true" data-precision="{{ p }}" type="button">{{ p }}</button>
+<button class="filtre-precision-btn px-2.5 py-1 rounded-full border border-white/15 text-[11.5px] text-app-textPrimary hover:border-white/30 transition-colors" data-active="true" data-precision="{{ p }}" type="button">{{ p }}</button>
 {% endfor %}
 </div>
 </div>
 </aside>
-<div class="lg:col-span-9 bg-obsidian-900/90 border border-slate-800/80 rounded-2xl p-5 lg:p-6 shadow-2xl backdrop-blur-xl">
+<div class="lg:col-span-9 bg-white/[0.03] border border-white/10 rounded-2xl p-5 lg:p-6 backdrop-blur-xl">
 <div class="space-y-3" id="liste-historique">
 {% for e in entrees %}
-<a href="{{ url_for('dashboard', modele=e.modele, precision=e.precision, contexte=e.contexte, plateforme=e.plateforme) }}" class="historique-item relative flex flex-wrap items-center justify-between gap-4 p-4 sm:p-4.5 rounded-xl border {{ 'border-sky-600/70 bg-gradient-to-r from-obsidian-850 to-obsidian-900 card-active-glow' if loop.first else 'border-slate-800/80 bg-obsidian-950/40' }} hover:border-slate-600 transition-all cursor-pointer" data-compatible="{{ 'compatible' if e.compatible else 'non_compatible' }}" data-plateforme="{{ e.plateforme|lower }}" data-modele="{{ e.modele|lower }}" data-precision="{{ e.precision }}">
+<a href="{{ url_for('dashboard', modele=e.modele, precision=e.precision, contexte=e.contexte, plateforme=e.plateforme) }}" class="historique-item relative flex flex-wrap items-center justify-between gap-4 p-4 sm:p-4.5 rounded-xl border {{ 'border-[#5b8def]/60 bg-gradient-to-r from-[#5b8def]/10 to-transparent' if loop.first else 'border-white/10 bg-white/[0.02]' }} hover:border-white/25 transition-all cursor-pointer" data-compatible="{{ 'compatible' if e.compatible else 'non_compatible' }}" data-plateforme="{{ e.plateforme|lower }}" data-modele="{{ e.modele|lower }}" data-precision="{{ e.precision }}">
 <div class="flex items-center space-x-4 min-w-[220px]">
-<div class="w-10 h-10 rounded-lg bg-obsidian-950 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
+{% if e.avatar_modele %}
+<img alt="" class="w-10 h-10 rounded-lg object-cover bg-white/[0.04] border border-white/10 shrink-0" src="{{ e.avatar_modele }}">
+{% else %}
+<div class="w-10 h-10 rounded-lg bg-white/[0.04] border border-white/10 flex items-center justify-center text-app-textMuted shrink-0">
 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" x2="12" y1="22.08" y2="12"></line></svg>
 </div>
+{% endif %}
 <div>
-<h2 class="text-sm font-semibold text-white tracking-wide">{{ e.modele.split('/')[-1] }}</h2>
-<div class="text-[11px] text-slate-400 flex items-center space-x-1.5 mt-0.5">
-<span class="text-slate-300 font-medium">{{ e.precision }}</span><span>•</span><span>{{ e.contexte }} tokens</span>
+<h2 class="text-base font-semibold text-white tracking-wide">{{ e.modele.split('/')[-1] }}</h2>
+<div class="text-[11px] text-app-textMuted flex items-center space-x-1.5 mt-0.5">
+<span class="text-app-textPrimary font-medium">{{ e.precision }}</span><span>•</span><span>{{ e.contexte }} tokens</span>
 </div>
 </div>
 </div>
 <div class="hidden md:flex items-center space-x-3 min-w-[180px]">
-<div class="w-8 h-8 rounded-lg bg-obsidian-950 border border-slate-800 flex items-center justify-center text-slate-400 shrink-0">
-<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><rect height="16" rx="2" ry="2" width="16" x="4" y="4"></rect><rect height="6" width="6" x="9" y="9"></rect></svg>
-</div>
-<div><p class="text-xs font-semibold text-slate-200">{{ e.plateforme }}</p><p class="text-[11px] text-slate-500">Plateforme cible</p></div>
+<img alt="" class="w-8 h-8 rounded-lg object-contain bg-white/[0.04] border border-white/10 shrink-0" src="{{ url_for('static', filename='img/hf/' + e.image_plateforme) }}">
+<div><p class="text-xs font-semibold text-app-textPrimary">{{ e.plateforme }}</p><p class="text-[11px] text-app-textSubtle">Plateforme cible</p></div>
 </div>
 <div class="hidden sm:flex items-center space-x-3 min-w-[140px]">
 <div class="relative w-10 h-10 shrink-0">
 <svg class="w-10 h-10 transform -rotate-90" viewBox="0 0 36 36">
-<circle cx="18" cy="18" fill="none" r="14" stroke="#1e293b" stroke-width="3"></circle>
-<circle cx="18" cy="18" fill="none" r="14" stroke="{{ '#0ea5e9' if e.compatible else '#f87171' }}" stroke-dasharray="{{ (e.taux_go if e.taux_go < 100 else 100) * 0.88 }}, 100" stroke-linecap="round" stroke-width="3"></circle>
+<circle cx="18" cy="18" fill="none" r="14" stroke="rgba(255,255,255,0.1)" stroke-width="3"></circle>
+<circle cx="18" cy="18" fill="none" r="14" stroke="{{ '#5b8def' if e.compatible else '#f87171' }}" stroke-dasharray="{{ (e.taux_go if e.taux_go < 100 else 100) * 0.88 }}, 100" stroke-linecap="round" stroke-width="3"></circle>
 </svg>
-<span class="absolute inset-0 flex items-center justify-center text-[9px] font-semibold text-slate-200">{{ e.taux_go }}%</span>
+<span class="absolute inset-0 flex items-center justify-center text-[9px] font-semibold text-app-textPrimary">{{ e.taux_go }}%</span>
 </div>
-<div><p class="text-xs font-semibold text-slate-200">{{ e.taux_go }}%</p><p class="text-[11px] text-slate-400">{{ "%.1f"|format(e.detail_go.total) }} / {{ e.dispo_go }} GB</p></div>
+<div><p class="text-xs font-semibold text-app-textPrimary">{{ e.taux_go }}%</p><p class="text-[11px] text-app-textMuted">{{ "%.1f"|format(e.detail_go.total) }} / {{ e.dispo_go }} GB</p></div>
 </div>
 <div class="min-w-[140px] text-left">
 {% if e.compatible %}
@@ -137,26 +159,40 @@ Retour
 <span>Non compatible</span>
 </div>
 {% endif %}
-<p class="text-[11px] text-slate-500 mt-0.5">{{ e.date.replace('T', ' ') }}</p>
+<p class="text-[11px] text-app-textSubtle mt-0.5">{{ e.date.replace('T', ' ') }}</p>
 </div>
 </a>
 {% else %}
-<p class="text-slate-500 text-sm text-center py-8">Aucune estimation enregistrée pour l'instant.</p>
+<p class="text-app-textSubtle text-sm text-center py-8">Aucune estimation enregistrée pour l'instant.</p>
 {% endfor %}
-<p class="hidden text-slate-500 text-sm text-center py-8" id="aucun-resultat">Aucune estimation ne correspond à ces filtres.</p>
+<p class="hidden text-app-textSubtle text-sm text-center py-8" id="aucun-resultat">Aucune estimation ne correspond à ces filtres.</p>
+<button class="hidden w-full mt-1 py-2.5 rounded-xl border border-white/10 text-xs font-medium text-app-textMuted hover:text-app-textPrimary hover:border-white/25 transition-colors" id="voir-plus-btn" type="button">Voir plus</button>
 </div>
-<div class="flex items-center justify-between pt-5 mt-4 border-t border-slate-800/80 text-xs text-slate-400">
+<div class="flex items-center justify-between pt-5 mt-4 border-t border-white/10 text-xs text-app-textMuted">
 <span id="compteur-resultats">{{ entrees|length }} estimation{{ 's' if entrees|length != 1 else '' }} au total</span>
 </div>
 </div>
 </div>
 </main>
-<footer class="w-full border-t border-slate-800/60 py-4 text-[11px] text-slate-500">
-<div class="max-w-[1536px] mx-auto px-6 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-2">
-<div class="flex items-center space-x-2"><span>Calcul déterministe</span><span>•</span><span>Architecture Attention / MLP</span></div>
-<div class="flex items-center space-x-2 font-mono"><span>LLM Memory Estimator</span><span>•</span><span>v1.0.0</span></div>
-</div>
-</footer>
+<script type="module">
+  import { initAnimatedGradient } from "{{ url_for('static', filename='js/animated-gradient.js') }}";
+  initAnimatedGradient(document.getElementById('gradient-bg'), {
+    color1: '#050505',
+    color2: '#4f6bed40',
+    color3: '#22d3ee2e',
+    rotation: 25,
+    proportion: 35,
+    scale: 0.012,
+    speed: 3,
+    distortion: 5,
+    swirl: 45,
+    swirlIterations: 14,
+    softness: 95,
+    offset: 0,
+    shape: 'checks',
+    shapeSize: 45,
+  });
+</script>
 <script>
   const items = Array.from(document.querySelectorAll('.historique-item'));
   const rechercheInput = document.getElementById('filtre-recherche');
@@ -164,24 +200,43 @@ Retour
   const precisionBtns = Array.from(document.querySelectorAll('.filtre-precision-btn'));
   const compteur = document.getElementById('compteur-resultats');
   const aucunResultat = document.getElementById('aucun-resultat');
+  const btnVoirPlus = document.getElementById('voir-plus-btn');
+
+  // la liste peut grossir sans limite : par défaut on n'affiche que les CAP_INITIAL
+  // plus récentes, avec un bouton pour tout dérouler ; dès qu'un filtre est actif
+  // (recherche ou cases décochées) la limite saute pour pouvoir retrouver un ancien résultat
+  const CAP_INITIAL = 12;
+  let deplie = false;
+
+  function filtreActif() {
+    return rechercheInput.value.trim() !== ''
+      || statutChecks.some(c => !c.checked)
+      || precisionBtns.some(b => b.dataset.active !== 'true');
+  }
 
   function appliquerFiltres() {
     const recherche = rechercheInput.value.trim().toLowerCase();
     const statutsActifs = statutChecks.filter(c => c.checked).map(c => c.value);
     const precisionsActives = precisionBtns.filter(b => b.dataset.active === 'true').map(b => b.dataset.precision);
 
-    let visibles = 0;
-    items.forEach(item => {
+    const correspondances = items.filter((item) => {
       const matchRecherche = !recherche || item.dataset.modele.includes(recherche) || item.dataset.plateforme.includes(recherche);
       const matchStatut = statutsActifs.includes(item.dataset.compatible);
       const matchPrecision = precisionsActives.includes(item.dataset.precision);
-      const visible = matchRecherche && matchStatut && matchPrecision;
-      item.style.display = visible ? '' : 'none';
-      if (visible) visibles++;
+      return matchRecherche && matchStatut && matchPrecision;
     });
 
-    compteur.textContent = visibles + ' estimation' + (visibles !== 1 ? 's' : '') + ' affichée' + (visibles !== 1 ? 's' : '');
-    aucunResultat.classList.toggle('hidden', visibles !== 0 || items.length === 0);
+    const avecLimite = !deplie && !filtreActif();
+    const affichees = avecLimite ? correspondances.slice(0, CAP_INITIAL) : correspondances;
+    const affichéesSet = new Set(affichees);
+    items.forEach((item) => { item.style.display = affichéesSet.has(item) ? '' : 'none'; });
+
+    const n = affichees.length;
+    let texte = n + ' estimation' + (n !== 1 ? 's' : '') + ' affichée' + (n !== 1 ? 's' : '');
+    if (correspondances.length > n) texte += ' sur ' + correspondances.length;
+    compteur.textContent = texte;
+    aucunResultat.classList.toggle('hidden', correspondances.length !== 0 || items.length === 0);
+    btnVoirPlus.classList.toggle('hidden', !(avecLimite && correspondances.length > CAP_INITIAL));
   }
 
   rechercheInput.addEventListener('input', appliquerFiltres);
@@ -190,10 +245,12 @@ Retour
     btn.addEventListener('click', () => {
       const actif = btn.dataset.active === 'true';
       btn.dataset.active = actif ? 'false' : 'true';
-      btn.classList.toggle('border-sky-500', !actif);
-      btn.classList.toggle('text-sky-400', !actif);
+      btn.classList.toggle('border-[#5b8def]/60', !actif);
+      btn.classList.toggle('text-[#8fb3ff]', !actif);
       appliquerFiltres();
     });
   });
+  btnVoirPlus.addEventListener('click', () => { deplie = true; appliquerFiltres(); });
+  appliquerFiltres();
 </script>
 </body></html>
