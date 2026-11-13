@@ -21,13 +21,15 @@ git clone https://github.com/yassine674/llm-modelfit.git
 cd llm-modelfit
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -e ".[webapp]"
 ```
+
+`[webapp]` ajoute Flask pour l'interface web. Sans lui, seul le calcul est installé (c'est ce qu'utilise une autre application qui dépend de `llm_modelfit`).
 
 Ou directement depuis GitHub, sans cloner :
 
 ```bash
-pip install git+https://github.com/yassine674/llm-modelfit.git
+pip install "llm-modelfit[webapp] @ git+https://github.com/yassine674/llm-modelfit.git"
 ```
 
 ## Structure du projet
@@ -44,7 +46,7 @@ llm_modelfit/
     └── platforms.json     # base de plateformes (GPU + embarqué)
 ```
 
-Les plateformes, les modèles et l'historique sont stockés dans une base SQLite créée automatiquement au premier lancement dans le dossier de données utilisateur (`~/.local/share/llm_modelfit/` sous Linux, `%LOCALAPPDATA%\llm_modelfit\` sous Windows). La variable d'environnement `LLM_MODELFIT_DB` permet d'utiliser un autre fichier.
+Les plateformes, les modèles et l'historique sont stockés dans une base SQLite créée automatiquement au premier lancement dans le dossier de données utilisateur (`~/.local/share/llm_modelfit/` sous Linux, `%LOCALAPPDATA%\llm_modelfit\` sous Windows). La variable d'environnement `LLM_MODELFIT_DB` permet d'utiliser un autre fichier. Une base créée par une version précédente est mise à niveau automatiquement à l'ouverture, sans perte de l'historique. Chaque modèle consulté en ligne y est aussi mémorisé, pour rester utilisable sans connexion.
 
 ---
 

@@ -8,8 +8,21 @@ from dotenv import load_dotenv
 from huggingface_hub import hf_hub_download, HfApi
 from huggingface_hub.errors import HfHubHTTPError
 
-load_dotenv()
-HF_TOKEN = os.getenv("HF_TOKEN")
+# délai maximum (secondes) d'un appel à Hugging Face : sur une carte hors ligne,
+# mieux vaut échouer vite et passer à la base locale que rester bloqué
+DELAI_RESEAU = 10
+
+_jeton_charge = False
+
+
+def jeton_hf():
+    # lu au premier appel réseau, pas à l'import : importer llm_modelfit depuis une
+    # autre application ne doit pas lire le .env du dossier où elle est lancée
+    global _jeton_charge
+    if not _jeton_charge:
+        load_dotenv()
+        _jeton_charge = True
+    return os.getenv("HF_TOKEN")
 
 # connexion réutilisée (keep-alive) : évite de refaire une poignée de main
 # TLS à chaque appel, ce qui coûtait le plus de temps sur la recherche live
@@ -38,14 +51,15 @@ def avatar_auteur(nom):
 
 def get_model_config(model_id):
     try:
-        chemin = hf_hub_download(repo_id=model_id, filename="config.json", token=HF_TOKEN)
+        chemin = hf_hub_download(repo_id=model_id, filename="config.json", token=jeton_hf(),
+                                 etag_timeout=DELAI_RESEAU)
     except HfHubHTTPError as e:
-        code = e.response.status_code
+        code = e.response.status_code if e.response is not None else None
         if code == 403:
             raise RuntimeError(f"Licence non acceptée pour '{model_id}' : https://huggingface.co/{model_id}") from e
         if code == 404:
             try:
-                HfApi(token=HF_TOKEN).model_info(model_id)
+                HfApi(token=jeton_hf()).model_info(model_id, timeout=DELAI_RESEAU)
             except Exception:
                 raise RuntimeError(f"Modèle '{model_id}' introuvable.") from e
             raise RuntimeError(
@@ -59,7 +73,7 @@ def get_model_config(model_id):
 
 
 def get_nb_param(model_id):
-    info = HfApi(token=HF_TOKEN).model_info(model_id)
+    info = HfApi(token=jeton_hf()).model_info(model_id, timeout=DELAI_RESEAU)
     if info.safetensors:
         return info.safetensors.total
     if info.gguf:
@@ -70,7 +84,7 @@ def get_nb_param(model_id):
 def rechercher_modeles(recherche, limite=8, tache=None):
     if not recherche or len(recherche) < 2:
         return []
-    resultats = list(HfApi(token=HF_TOKEN).list_models(
+    resultats = list(HfApi(token=jeton_hf()).list_models(
         search=recherche, limit=limite, sort="downloads", pipeline_tag=tache
     ))
     # les avatars (un appel HTTP par auteur distinct) sont le vrai goulot
@@ -107,6 +121,22 @@ def rechercher_organisations(recherche, limite=5):
 ALIAS_ANCIENS = {"num_hidden_layers": "n_layer", "num_attention_heads": "n_head", "hidden_size": "n_embd"}
 
 
+# valeurs que certaines configs omettent parce qu'elles sont égales aux valeurs par
+# défaut de la classe de config de transformers (copiées de Gemma3TextConfig) :
+# la config de gemma-3-4b ne contient ni le nombre de têtes, ni head_dim, ni le vocabulaire
+DEFAUTS_PAR_TYPE = {
+    "gemma3_text": {
+        "num_attention_heads": 8,
+        "num_key_value_heads": 4,
+        "head_dim": 256,
+        "vocab_size": 262208,
+        "max_position_embeddings": 131072,
+        "sliding_window": 4096,
+        "sliding_window_pattern": 6,
+    },
+}
+
+
 def _couches_glissantes(cfg, nb_couches):
     # attention à fenêtre glissante : (nombre de couches concernées, taille de la fenêtre)
     fenetre = cfg.get("sliding_window")
@@ -135,6 +165,11 @@ def normalize_config(cfg):
         cfg = cfg["text_config"]
         manquants = [c for c in requis if c not in cfg]
 
+    defauts = DEFAUTS_PAR_TYPE.get(cfg.get("model_type"), {})
+    if defauts:
+        cfg = {**defauts, **cfg}
+        manquants = [c for c in requis if c not in cfg]
+
     if manquants:
         cfg = dict(cfg)
         for cible, source in ALIAS_ANCIENS.items():
@@ -153,9 +188,10 @@ def normalize_config(cfg):
     nb_tetes = cfg["num_attention_heads"]
     taille_cachee = cfg["hidden_size"]
     # pas de GQA -> autant de têtes KV que de têtes normales
-    nb_tetes_kv = cfg.get("num_key_value_heads", nb_tetes)
-    # Gemma donne head_dim direct, les autres non (on le calcule)
-    dim_tete = cfg.get("head_dim", taille_cachee // nb_tetes)
+    nb_tetes_kv = cfg.get("num_key_value_heads") or nb_tetes
+    # Gemma donne head_dim direct, les autres non (on le calcule) ;
+    # `or` et pas get(..., défaut) : certaines configs écrivent "head_dim": null
+    dim_tete = cfg.get("head_dim") or taille_cachee // nb_tetes
     nb_glissantes, fenetre = _couches_glissantes(cfg, nb_couches)
 
     return {

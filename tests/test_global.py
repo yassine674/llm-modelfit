@@ -114,6 +114,57 @@ ajouter_historique("Mistral-7B-v0.1", "INT4", 8192, "NVIDIA A100 80GB", diag_ok)
 apres = len(charger_historique())
 verifier("ajouter_historique ajoute bien une ligne", apres == avant + 1)
 
+# --- base locale : migrations, secours hors ligne, configs incomplètes ---
+import json
+import sqlite3
+from llm_modelfit import db
+from llm_modelfit.modeles import _depuis_local
+from llm_modelfit.engine import memoire_cache_kv
+
+# ancienne base (v0.1.0) : colonne bandwidth_gbps, pas de config_json, numéro de version 0
+ancienne = os.path.join(tempfile.mkdtemp(), "ancienne.db")
+c = sqlite3.connect(ancienne)
+c.executescript(db.SCHEMA.replace("bandwidth_gb_s REAL", "bandwidth_gbps REAL").replace(
+    ",\n    config_json TEXT  -- config brute, relue par normalize_config comme une config Hugging Face", ""))
+c.execute("INSERT INTO platforms (name, memory_gb, bandwidth_gbps, power_watts) VALUES ('Test', 8, 17, 5)")
+c.execute("INSERT INTO models (hf_id, name, params, num_hidden_layers, vocab_size) VALUES ('google/gemma-7b', 'Gemma-7B', 1, 28, 256000)")
+c.commit(); c.close()
+os.environ["LLM_MODELFIT_DB"], base_tests = ancienne, os.environ["LLM_MODELFIT_DB"]
+c = db.connexion()
+cols_p = {l[1] for l in c.execute("PRAGMA table_info(platforms)")}
+verifier("migration : bandwidth_gbps renommée en bandwidth_gb_s, valeur gardée",
+         "bandwidth_gb_s" in cols_p and "bandwidth_gbps" not in cols_p
+         and c.execute("SELECT bandwidth_gb_s FROM platforms WHERE name='Test'").fetchone()[0] == 17)
+verifier("migration : modèles de référence rafraîchis (config_json remplie)",
+         c.execute("SELECT config_json FROM models WHERE name='Gemma-7B'").fetchone()[0] is not None)
+verifier("migration : numéro de version à jour", c.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS))
+c.close()
+db.connexion().close()  # deuxième ouverture : les migrations ne se rejouent pas sans erreur
+os.environ["LLM_MODELFIT_DB"] = base_tests
+
+mistral_local = _depuis_local("Mistral-7B-v0.1")
+verifier("secours local : Mistral v0.1 garde sa fenêtre glissante",
+         mistral_local["num_sliding_layers"] == 32 and mistral_local["sliding_window"] == 4096)
+verifier("secours local : Gemma-7B a head_dim 256 (et pas 3072/16 = 192)", _depuis_local("Gemma-7B")["head_dim"] == 256)
+verifier("secours local : une config vue en ligne est réutilisable hors ligne",
+         _depuis_local("mistralai/Mistral-7B-v0.1") is not None)
+
+gemma3_4b = {"model_type": "gemma3", "text_config": {"hidden_size": 2560, "model_type": "gemma3_text",
+             "num_hidden_layers": 34, "sliding_window": 1024}}
+s4 = normalize_config(gemma3_4b)
+verifier("Gemma 3 4B : valeurs par défaut de transformers complétées",
+         s4["num_kv_heads"] == 4 and s4["head_dim"] == 256 and s4["vocab_size"] == 262208)
+verifier("Gemma 3 4B : la fenêtre de la config prime sur le défaut, motif 1 globale / 6",
+         s4["sliding_window"] == 1024 and s4["num_sliding_layers"] == 34 - 34 // 6)
+gemma3_27b = {"text_config": {"head_dim": 128, "hidden_size": 5376, "model_type": "gemma3_text",
+              "num_attention_heads": 32, "num_hidden_layers": 62, "num_key_value_heads": 16}}
+verifier("Gemma 3 27B : les valeurs présentes dans la config priment", normalize_config(gemma3_27b)["head_dim"] == 128)
+verifier("head_dim null dans la config : recalculé",
+         normalize_config({"num_hidden_layers": 2, "num_attention_heads": 4, "hidden_size": 256,
+                           "vocab_size": 10, "head_dim": None})["head_dim"] == 64)
+verifier("cache KV : précision donnée en octets (q8_0 d'Ollama = 1.0625)",
+         memoire_cache_kv(1, 1, 1, 16, 1.0625) == 2 * 16 * 1.0625)
+
 # --- résumé ---
 print()
 if erreurs:
