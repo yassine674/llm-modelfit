@@ -1,6 +1,6 @@
 # compare un modèle à des plateformes et propose des alternatives si ça ne rentre pas
 from .db import connexion
-from .engine import memoire_totale, octets_vers_go, nb_gpu_necessaire, autonomie_heures, note_thermique
+from .engine import MARGE_MEMOIRE, memoire_totale, octets_vers_go, nb_gpu_necessaire, autonomie_heures, note_thermique
 
 ORDRE_PRECISIONS = ["FP32", "FP16", "INT8", "INT4"]
 
@@ -18,13 +18,17 @@ def charger_plateformes():
     return plateformes
 
 
-def verifier_compat(total_go, plateforme):
+def verifier_compat(total_go, plateforme, marge=MARGE_MEMOIRE):
+    # compatible seulement s'il reste au moins `marge` de la mémoire libre
     dispo = plateforme["memory_gb"]
+    utilisable = dispo * (1 - marge)
     return {
         "plateforme": plateforme["name"],
         "dispo_go": dispo,
+        "utilisable_go": round(utilisable, 3),
+        "marge_pct": round(marge * 100),
         "requis_go": round(total_go, 3),
-        "compatible": total_go <= dispo,
+        "compatible": total_go <= utilisable,
         "taux_go": round(total_go / dispo * 100, 1),
         "unified_memory": plateforme.get("unified_memory", False),
     }

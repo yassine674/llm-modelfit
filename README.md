@@ -44,6 +44,8 @@ llm_modelfit/
     └── platforms.json     # base de plateformes (GPU + embarqué)
 ```
 
+Les plateformes, les modèles et l'historique sont stockés dans une base SQLite créée automatiquement au premier lancement dans le dossier de données utilisateur (`~/.local/share/llm_modelfit/` sous Linux, `%LOCALAPPDATA%\llm_modelfit\` sous Windows). La variable d'environnement `LLM_MODELFIT_DB` permet d'utiliser un autre fichier.
+
 ---
 
 Projet développé dans le cadre d'un stage sur l'estimation des besoins mémoire des LLM sur plateformes GPU et Edge.

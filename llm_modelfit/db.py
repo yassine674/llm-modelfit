@@ -1,12 +1,22 @@
 # connexion à la base SQLite partagée par tout le projet
-# au premier lancement (fichier .db absent), la base est créée et peuplée
-# à partir des fixtures data/platforms.json et data/models.json
+# la base vit dans le dossier de données utilisateur (pas dans le paquet installé,
+# qu'une réinstallation écraserait) ; LLM_MODELFIT_DB permet d'imposer un autre chemin
+# si la table platforms est vide, elle est peuplée à partir de data/platforms.json et data/models.json
 import json
+import os
 import sqlite3
 from pathlib import Path
 
+from platformdirs import user_data_dir
+
 CHEMIN_DATA = Path(__file__).parent / "data"
-CHEMIN_DB = CHEMIN_DATA / "llm_modelfit.db"
+
+
+def chemin_db():
+    chemin = os.environ.get("LLM_MODELFIT_DB")
+    if chemin:
+        return Path(chemin)
+    return Path(user_data_dir("llm_modelfit", appauthor=False)) / "llm_modelfit.db"
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS platforms (
@@ -64,9 +74,7 @@ CREATE TABLE IF NOT EXISTS historique_options (
 """
 
 
-def _initialiser(conn):
-    conn.executescript(SCHEMA)
-
+def _peupler(conn):
     with open(CHEMIN_DATA / "platforms.json") as f:
         for p in json.load(f):
             conn.execute(
@@ -98,9 +106,13 @@ def _initialiser(conn):
 
 
 def connexion():
-    premiere_fois = not CHEMIN_DB.exists()
-    conn = sqlite3.connect(CHEMIN_DB)
+    chemin = chemin_db()
+    chemin.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(chemin)
     conn.row_factory = sqlite3.Row
-    if premiere_fois:
-        _initialiser(conn)
+    # CREATE TABLE IF NOT EXISTS : sans effet sur les tables existantes,
+    # mais crée celles ajoutées au schéma depuis la création de la base
+    conn.executescript(SCHEMA)
+    if conn.execute("SELECT COUNT(*) FROM platforms").fetchone()[0] == 0:
+        _peupler(conn)
     return conn

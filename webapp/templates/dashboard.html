@@ -327,7 +327,7 @@ Caractéristiques vérifiées via Hugging Face
 <div class="h-full bg-gradient-to-r {{ 'from-[#5b8def] to-sky-400' if diagnostic.compat.compatible else 'from-red-600 to-red-400' }} rounded-full" style="width: {{ diagnostic.compat.taux_go if diagnostic.compat.taux_go < 100 else 100 }}%;"></div>
 </div>
 </div>
-<div class="text-[11px] text-app-textSubtle leading-relaxed">Estimation théorique : n'inclut pas l'overhead du framework d'inférence (contexte CUDA ~300-500 Mo, fragmentation de l'allocateur mémoire).</div>
+<div class="text-[11px] text-app-textSubtle leading-relaxed">Compatible si l'estimation laisse au moins {{ diagnostic.compat.marge_pct }} % de la mémoire libre ({{ "%.1f"|format(diagnostic.compat.utilisable_go) }} GB utilisables). Estimation théorique : n'inclut pas l'overhead du framework d'inférence (contexte CUDA ~300-500 Mo, fragmentation de l'allocateur mémoire).</div>
 </div>
 </div>
 <div class="md:col-span-4 flex md:justify-end items-center">
@@ -343,7 +343,7 @@ Caractéristiques vérifiées via Hugging Face
 <div class="w-7 h-7 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center shrink-0">
 <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="15" x2="9" y1="9" y2="15"></line><line x1="9" x2="15" y1="9" y2="15"></line></svg>
 </div>
-<div><div class="text-sm font-semibold text-red-400">Non compatible</div><div class="text-xs text-app-textMuted">avec la plateforme sélectionnée</div></div>
+<div><div class="text-sm font-semibold text-red-400">Non compatible</div><div class="text-xs text-app-textMuted">{% if diagnostic.compat.taux_go <= 100 %}il faut garder {{ diagnostic.compat.marge_pct }} % de mémoire libre{% else %}avec la plateforme sélectionnée{% endif %}</div></div>
 </div>
 {% endif %}
 </div>

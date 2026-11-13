@@ -1,3 +1,9 @@
+import os
+import tempfile
+
+# base jetable : les tests ne doivent pas écrire dans l'historique réel
+os.environ["LLM_MODELFIT_DB"] = os.path.join(tempfile.mkdtemp(), "test.db")
+
 from llm_modelfit.modeles import get_specs
 from llm_modelfit.engine import (
     memoire_totale, octets_vers_go, nb_gpu_necessaire,
@@ -8,6 +14,7 @@ from llm_modelfit.comparaison import (
     meilleure_option, toutes_les_options, diagnostiquer,
 )
 from llm_modelfit.historique import ajouter_historique, charger_historique
+from llm_modelfit.fetch.huggingface import normalize_config
 
 erreurs = []
 
@@ -32,6 +39,25 @@ r = memoire_totale(specs_local, "INT4", 8192)
 total_go = octets_vers_go(r["total"])
 verifier("memoire_totale proche de l'exemple du sujet (5.2 Go)", abs(total_go - 5.2) < 0.1)
 
+# --- fenêtre glissante (sliding window) ---
+base = {"num_hidden_layers": 32, "num_attention_heads": 32, "num_key_value_heads": 8,
+        "hidden_size": 4096, "vocab_size": 32000}
+s_mistral = normalize_config({**base, "sliding_window": 4096})
+verifier("Mistral v0.1 : 32 couches glissantes, fenêtre 4096",
+         s_mistral["num_sliding_layers"] == 32 and s_mistral["sliding_window"] == 4096)
+s_qwen = normalize_config({**base, "sliding_window": 131072, "use_sliding_window": False})
+verifier("fenêtre désactivée (Qwen2) ignorée", s_qwen["num_sliding_layers"] == 0)
+s_gemma3 = normalize_config({**base, "num_hidden_layers": 26, "sliding_window": 512, "sliding_window_pattern": 6})
+verifier("Gemma 3 : une couche globale sur 6", s_gemma3["num_sliding_layers"] == 22)
+s_types = normalize_config({**base, "num_hidden_layers": 4, "sliding_window": 128,
+                            "layer_types": ["sliding_attention", "full_attention"] * 2})
+verifier("layer_types explicite pris en compte", s_types["num_sliding_layers"] == 2)
+kv_8k = memoire_totale({**s_mistral, "nb_param": 1}, "FP16", 8192)["cache_kv"]
+kv_4k = memoire_totale({**s_mistral, "nb_param": 1}, "FP16", 4096)["cache_kv"]
+verifier("cache KV plafonné à la fenêtre au-delà de 4096 tokens", kv_8k == kv_4k)
+kv_sans = memoire_totale({**s_qwen, "nb_param": 1}, "FP16", 8192)["cache_kv"]
+verifier("sans fenêtre, le cache KV suit tout le contexte", kv_sans == 2 * kv_4k)
+
 verifier("nb_gpu_necessaire(200, 80) == 3", nb_gpu_necessaire(200, 80) == 3)
 verifier("autonomie_heures(100, 15) proche de 6.67h", abs(autonomie_heures(100, 15) - 6.67) < 0.01)
 verifier("autonomie_heures sans puissance -> None", autonomie_heures(100, 0) is None)
@@ -51,6 +77,8 @@ verifier("comparer_toutes_plateformes trie les compatibles en premier", resultat
 rpi5 = next(p for p in plateformes if p["name"] == "Raspberry Pi 5 8GB")
 r_fp16 = octets_vers_go(memoire_totale(specs_api, "FP16", 8192)["total"])
 verifier("Mistral FP16 8K ne rentre PAS sur Raspberry Pi 5", verifier_compat(r_fp16, rpi5)["compatible"] is False)
+verifier("marge : 90 % de la mémoire occupée n'est PAS compatible", verifier_compat(0.90 * rpi5["memory_gb"], rpi5)["compatible"] is False)
+verifier("marge : 80 % de la mémoire occupée est compatible", verifier_compat(0.80 * rpi5["memory_gb"], rpi5)["compatible"] is True)
 
 option_rpi5 = meilleure_option(specs_api, 8192, rpi5)
 verifier("meilleure_option propose INT4 pour Mistral sur Raspberry Pi 5", option_rpi5["precision"] == "INT4" and option_rpi5["nb_gpu"] == 1)

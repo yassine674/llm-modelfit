@@ -107,6 +107,24 @@ def rechercher_organisations(recherche, limite=5):
 ALIAS_ANCIENS = {"num_hidden_layers": "n_layer", "num_attention_heads": "n_head", "hidden_size": "n_embd"}
 
 
+def _couches_glissantes(cfg, nb_couches):
+    # attention à fenêtre glissante : (nombre de couches concernées, taille de la fenêtre)
+    fenetre = cfg.get("sliding_window")
+    if not fenetre or cfg.get("use_sliding_window") is False:
+        return 0, None  # ex. Qwen2 : fenêtre renseignée mais désactivée
+    types = cfg.get("layer_types")
+    if types:
+        return sum(t == "sliding_attention" for t in types), fenetre
+    motif = cfg.get("sliding_window_pattern") or cfg.get("_sliding_window_pattern")
+    if motif:
+        # Gemma 3 : une couche globale toutes les `motif` couches, les autres glissantes
+        return nb_couches - nb_couches // motif, fenetre
+    if cfg.get("model_type") == "gemma2":
+        # Gemma 2 : alternance, les couches d'indice pair sont glissantes
+        return (nb_couches + 1) // 2, fenetre
+    return nb_couches, fenetre  # Mistral 7B v0.1 : toutes les couches
+
+
 def normalize_config(cfg):
     requis = ["num_hidden_layers", "num_attention_heads", "hidden_size", "vocab_size"]
     manquants = [c for c in requis if c not in cfg]
@@ -138,11 +156,14 @@ def normalize_config(cfg):
     nb_tetes_kv = cfg.get("num_key_value_heads", nb_tetes)
     # Gemma donne head_dim direct, les autres non (on le calcule)
     dim_tete = cfg.get("head_dim", taille_cachee // nb_tetes)
+    nb_glissantes, fenetre = _couches_glissantes(cfg, nb_couches)
 
     return {
         "num_layers": nb_couches,
         "num_kv_heads": nb_tetes_kv,
         "head_dim": dim_tete,
+        "num_sliding_layers": nb_glissantes,
+        "sliding_window": fenetre,
         "vocab_size": cfg["vocab_size"],
         "context_max": cfg.get("max_position_embeddings") or cfg.get("n_positions") or cfg.get("n_ctx"),
     }

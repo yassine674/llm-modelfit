@@ -8,6 +8,7 @@ dependencies = [
     "requests",
     "python-dotenv",
     "flask",
+    "platformdirs",
 ]
 
 [build-system]
@@ -18,4 +19,4 @@ build-backend = "setuptools.build_meta"
 include = ["llm_modelfit*"]
 
 [tool.setuptools.package-data]
-"llm_modelfit" = ["data/*.db"]
+"llm_modelfit" = ["data/*.json"]

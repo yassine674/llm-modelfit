@@ -14,9 +14,14 @@ def memoire_poids(nb_param, precision):
     return nb_param * OCTETS_PAR_PRECISION[precision]
 
 
-def memoire_cache_kv(nb_couches, nb_tetes_kv, dim_tete, contexte, precision_kv="FP16"):
+def memoire_cache_kv(nb_couches, nb_tetes_kv, dim_tete, contexte, precision_kv="FP16",
+                     nb_couches_glissantes=0, fenetre=None):
+    # attention à fenêtre glissante (Mistral 7B v0.1, Gemma 2/3) : ces couches ne
+    # gardent que les `fenetre` derniers tokens, quelle que soit la longueur du contexte
     octets = OCTETS_PAR_PRECISION[precision_kv]
-    return 2 * nb_couches * nb_tetes_kv * dim_tete * contexte * octets
+    tokens_glissants = min(contexte, fenetre) if fenetre else contexte
+    tokens_stockes = (nb_couches - nb_couches_glissantes) * contexte + nb_couches_glissantes * tokens_glissants
+    return 2 * nb_tetes_kv * dim_tete * tokens_stockes * octets
 
 
 def memoire_buffers(poids, cache, pct=0.1):
@@ -35,7 +40,10 @@ def memoire_totale(specs, precision, contexte, precision_kv="FP16", pct_buffers=
     if specs.get("poids_seulement"):
         cache = 0
     else:
-        cache = memoire_cache_kv(specs["num_layers"], specs["num_kv_heads"], specs["head_dim"], contexte, precision_kv)
+        cache = memoire_cache_kv(
+            specs["num_layers"], specs["num_kv_heads"], specs["head_dim"], contexte, precision_kv,
+            specs.get("num_sliding_layers", 0), specs.get("sliding_window"),
+        )
     buffers = memoire_buffers(poids, cache, pct_buffers)
 
     return {
@@ -46,7 +54,11 @@ def memoire_totale(specs, precision, contexte, precision_kv="FP16", pct_buffers=
     }
 
 
-def nb_gpu_necessaire(total_go, mem_par_gpu_go, marge=0.15):
+# part de la mémoire laissée libre : OS, contexte CUDA, fragmentation de l'allocateur
+MARGE_MEMOIRE = 0.15
+
+
+def nb_gpu_necessaire(total_go, mem_par_gpu_go, marge=MARGE_MEMOIRE):
     n = math.ceil(total_go / mem_par_gpu_go)
     while total_go > n * mem_par_gpu_go * (1 - marge):
         n += 1
